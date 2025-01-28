@@ -15,7 +15,7 @@
             const myGenerator = await pipeline('text-generation', 'deepseek/deepseek-r1');
 
             // Generate text based on the input
-            const myResult = await myGenerator(myInputText, { max_length: 100 });
+            const myResult = await myGenerator(myInputText, { max_length: 100 });   // hmmm why the max_length
 
             // Display the generated text
             myOutputElement.textContent = myResult[0].generated_text;
