@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DeepSeek-R1 ONNX Streaming Example</title>
+    <script type="module">
+        import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+        async function myStreamText() {
+            const myInputElement = document.getElementById('myInputText');
+            const myOutputElement = document.getElementById('myOutputText');
+            const myInputText = myInputElement.value;
+
+            // Initialize the text generation pipeline with the specified model and configuration
+            const myGenerator = await pipeline(
+                "text-generation",
+                "onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX",
+                { dtype: "q4f16" }
+            );
+
+            // Define the message array (e.g., for conversational or question-answering tasks)
+            const myMessages = [
+                { role: "user", content: myInputText },
+            ];
+
+            // Create the text streamer for live text updates
+            const myStreamer = new TextStreamer(myGenerator.tokenizer, {
+                skip_prompt: true,
+                callback_function: (text) => {
+                    // Update the output in real time
+                    myOutputElement.textContent += text;
+                },
+            });
+
+            // Clear the output area before starting
+            myOutputElement.textContent = "";
+
+            // Generate the response with streaming
+            await myGenerator(myMessages, {
+                max_new_tokens: 512,
+                do_sample: false,
+                streamer: myStreamer,
+            });
+        }
+
+        // Expose the function to the global window object
+        window.myStreamText = myStreamText;
+    </script>
+</head>
+<body>
+    <h1>DeepSeek-R1 Streaming Text Generator</h1>
+    <textarea id="myInputText" rows="4" cols="50" placeholder="Enter your question or prompt here..."></textarea>
+    <br>
+    <input type="button" value="Generate Text" onclick="myStreamText()">
+    <h2>Generated Output:</h2>
+    <pre id="myOutputText"></pre>
+</body>
+</html>
