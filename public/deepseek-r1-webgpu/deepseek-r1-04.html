@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DeepSeek-R1 Simplified</title>
+    <script type="module">
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
+
+        async function myAnalyzeText() {
+            const myInputElement = document.getElementById('myInputText');
+            const myOutputElement = document.getElementById('myOutputText');
+            const myInputText = myInputElement.value;
+
+            // Initialize the text generation pipeline with the DeepSeek-R1 model
+            const myGenerator = await pipeline('text-generation', 'deepseek/deepseek-r1');
+
+            // Generate text based on the input
+            const myResult = await myGenerator(myInputText, { max_length: 100 });
+
+            // Display the generated text
+            myOutputElement.textContent = myResult[0].generated_text;
+        }
+
+        // Expose the function to the global window object
+        window.myAnalyzeText = myAnalyzeText;
+    </script>
+</head>
+<body>
+    <h1>DeepSeek-R1 Text Generation</h1>
+    <textarea id="myInputText" rows="4" cols="50" placeholder="Enter your text here..."></textarea>
+    <br>
+    <input type="button" value="Generate Text" onclick="myAnalyzeText()">
+    <h2>Generated Output:</h2>
+    <pre id="myOutputText"></pre>
+</body>
+</html>
