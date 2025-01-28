@@ -2,7 +2,7 @@
 <head> 
 <script type="module">
 
-import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.1';
 
 // Create a text generation pipeline
 const generator = await pipeline(
@@ -29,9 +29,11 @@ console.log(output[0].generated_text.at(-1).content);
 </script>
 </head>
 <body>
-Open the console. shift-ctrl-i
+<h1>DeeepSeek-R1 in the browser</h1>
+Open the console. shift-ctrl-i <br><br>
 Fully javqscript activated. If you don't want to completely download 
-<a href="https://huggingface.co/onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX"> DeepSeek-R1-Distill-Qwen-1.5B-ONNX </a> then you should probably close this page.<br>
-  I will make it more user friendly once it works.
+<a href="https://huggingface.co/onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX"> 
+  DeepSeek-R1-Distill-Qwen-1.5B-ONNX </a> then you should probably close this page.<br><br>
+I will make it more user friendly once it works.
 </body>
 </html>
