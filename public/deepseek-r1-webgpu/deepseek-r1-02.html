@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DeepSeek-R1 WebGPU Simplified</title>
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js"></script>
+</head>
+<body>
+    <h1>DeepSeek-R1 WebGPU Simplified Interface</h1>
+    <textarea id="myInputText" rows="4" cols="50" placeholder="Enter your text here..."></textarea>
+    <br>
+    <input type="button" value="Analyze Text" onclick="myAnalyzeText()">
+    <h2>Output:</h2>
+    <pre id="myOutputText"></pre>
+
+    <script>
+        async function myAnalyzeText() {
+            const myInputElement = document.getElementById('myInputText');
+            const myOutputElement = document.getElementById('myOutputText');
+            const myInputText = myInputElement.value;
+
+            // Load the DeepSeek-R1 model
+            const myModel = await window.transformers.load('deepseek/deepseek-r1');
+
+            // Perform analysis on the input text
+            const myResult = await myModel.generate(myInputText);
+
+            // Display the result
+            myOutputElement.textContent = myResult.generated_text;
+        }
+    </script>
+</body>
+</html>
