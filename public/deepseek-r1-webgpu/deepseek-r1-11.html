@@ -9,6 +9,7 @@ import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingfac
   // needed for buttons to call module functions
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
+let  generator
 let myCount = 7
 let myMin = 45
 
@@ -19,7 +20,7 @@ const messages = [{ role: "user", content: myContent },];
   
 // Create a text generation pipeline
 async function  myLoadModel(){
-const generator = await pipeline("text-generation","onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX", { dtype: "q4f16", device: "webgpu" },);
+generator = await pipeline("text-generation","onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX", { dtype: "q4f16", device: "webgpu" },);
 document.getElementById('myLoadButton').disabled = true
 document.getElementById('myAskButton').disabled = false
   
