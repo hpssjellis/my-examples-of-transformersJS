@@ -28,6 +28,7 @@ async function  myLoadModel(){
 
 
 async function myAskQuestion(){
+document.getElementById('myTextarea01').value ='' 
 const streamer = new TextStreamer(generator.tokenizer, {
   skip_prompt: true,
   callback_function: (text) => {document.getElementById('myTextarea01').value += text}, // Optional callback function   
