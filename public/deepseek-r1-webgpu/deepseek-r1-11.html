@@ -32,7 +32,7 @@ document.getElementById('myAskButton').disabled = false
 async function myAskQuestion(){
 const streamer = new TextStreamer(generator.tokenizer, {
   skip_prompt: true,
-  callback_function: (text) => { document.getElementById('myTextarea01').value = streamer }, // Optional callback function
+  callback_function: (text) => { console.log(streamer) }, // Optional callback function   document.getElementById('myTextarea01').value = streamer
 })
 
 // Generate a response
