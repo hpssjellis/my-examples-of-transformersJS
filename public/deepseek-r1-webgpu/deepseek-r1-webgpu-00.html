@@ -12,10 +12,9 @@ window.myAskQuestion = myAskQuestion
 let generator
 let myModel 
 
-const myContent = document.getElementById('myArea01').value 
+let myContent = document.getElementById('myArea01').value 
 console.log(myContent)
-// Define the list of messages
-const messages = [{ role: "user", content: myContent },];
+
   
 // Create a text generation pipeline
 async function  myLoadModel(){
@@ -29,6 +28,11 @@ async function  myLoadModel(){
 
 async function myAskQuestion(){
 document.getElementById('myTextarea01').value ='' 
+myContent = document.getElementById('myArea01').value 
+
+// Define the list of messages
+const messages = [{ role: "user", content: myContent },];
+console.log(myContent)
 const streamer = new TextStreamer(generator.tokenizer, {
   skip_prompt: true,
   callback_function: (text) => {document.getElementById('myTextarea01').value += text}, // Optional callback function   
@@ -71,6 +75,7 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 }"><br>
 Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
 Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
+My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a>
 My Github <a href="https://github.com/hpssjellis">Profile</a><br>
 
 
