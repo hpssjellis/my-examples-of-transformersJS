@@ -38,6 +38,7 @@ async function check() {
  * This class uses the Singleton pattern to enable lazy-loading of the pipeline
  */
 class ImageGenerationPipeline {
+  console.log('image generate start');
   static model_id = "onnx-community/Janus-Pro-1B-ONNX";
 
   static async getInstance(progress_callback = null) {
@@ -73,7 +74,8 @@ class ImageGenerationPipeline {
       },
       progress_callback,
     });
-
+   
+   console.log('image generate done');
     return Promise.all([this.processor, this.model]);
   }
 }
@@ -114,6 +116,8 @@ class ProgressStreamer extends BaseStreamer {
 const stopping_criteria = new InterruptableStoppingCriteria();
 
 async function generate(messages) {
+  
+  console.log(' generate start');
   // For this demo, we only respond to the last message
   const message = messages.at(-1);
 
@@ -142,6 +146,7 @@ async function generate(messages) {
         status: "image-update",
         ...output,
       });
+      
     };
 
     const num_image_tokens = processor.num_image_tokens;
