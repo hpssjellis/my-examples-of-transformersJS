@@ -31,8 +31,7 @@ async function loadModel() {
   const processor = await AutoProcessor.from_pretrained(model_id);
   const model = await MultiModalityCausalLM.from_pretrained(model_id, {
     dtype: fp16_supported ? "fp16" : "fp32",
-   // device: "webgpu"
-    device: "wasm"
+    device: "webgpu"     // device: "wasm"
   });
   
   return { processor, model };
