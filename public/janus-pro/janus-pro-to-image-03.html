@@ -1,0 +1,82 @@
+<script type="module">
+import {
+  AutoProcessor,
+  MultiModalityCausalLM,
+} from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+// Define constants
+const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
+const MAX_NEW_TEXT_TOKENS = 1024;
+let fp16_supported = false;
+
+/**
+ * Check WebGPU support
+ */
+async function checkWebGPU() {
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    fp16_supported = adapter && adapter.features.has("shader-f16");
+  } catch (e) {
+    console.error("WebGPU not supported:", e);
+  }
+}
+
+/**
+ * Load model and processor
+ */
+async function loadModel() {
+  await checkWebGPU();
+  const model_id = "onnx-community/Janus-Pro-1B-ONNX";
+  
+  const processor = await AutoProcessor.from_pretrained(model_id);
+  const model = await MultiModalityCausalLM.from_pretrained(model_id, {
+    dtype: fp16_supported ? "fp16" : "fp32",
+    device: "webgpu"
+  });
+  
+  return { processor, model };
+}
+
+/**
+ * Generate an image from text prompt
+ */
+async function generateImage(prompt, processor, model) {
+  if (!prompt.startsWith(IMAGE_GENERATION_COMMAND_PREFIX)) return;
+  
+  const text = prompt.replace(IMAGE_GENERATION_COMMAND_PREFIX, "");
+  const conversation = [{ role: "<|User|>", content: text }];
+  const inputs = await processor(conversation, { chat_template: "text_to_image" });
+  
+  const num_image_tokens = processor.num_image_tokens;
+  const outputs = await model.generate_images({
+    ...inputs,
+    min_new_tokens: num_image_tokens,
+    max_new_tokens: num_image_tokens,
+    do_sample: true,
+  });
+  
+  return outputs[0];
+}
+
+/**
+ * Main function to run on page load
+ */
+(async function main() {
+  console.log("Loading model...");
+  const { processor, model } = await loadModel();
+  console.log("Model loaded.");
+
+  // Example usage
+  const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
+  const image = await generateImage(prompt, processor, model);
+
+  if (image) {
+    const blob = await image.toBlob();
+    const imgUrl = URL.createObjectURL(blob);
+    
+    const imgElement = document.createElement("img");
+    imgElement.src = imgUrl;
+    document.body.appendChild(imgElement);
+  }
+})();
+</script>
