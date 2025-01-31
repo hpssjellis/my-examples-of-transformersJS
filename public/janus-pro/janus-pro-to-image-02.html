@@ -14,7 +14,7 @@ const conversation = [
     content: "A stunning princess from kabul in red, white traditional clothing, blue eyes, brown hair",
   },
 ];
-const inputs = await processor(conversation, { chat_template: "text_to_image" });
+const inputs = await processor(conversation, { chat_template: "text_to_image",device: "webgpu"  });
 
 // Generate response
 const num_image_tokens = processor.num_image_tokens;
