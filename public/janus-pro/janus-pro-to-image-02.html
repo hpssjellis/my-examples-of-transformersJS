@@ -1,4 +1,6 @@
-import { AutoProcessor, MultiModalityCausalLM } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.1';
+
+<script type="module">
+import { AutoProcessor, MultiModalityCausalLM } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
 
 // Load processor and model
 const model_id = "onnx-community/Janus-Pro-1B-ONNX";
@@ -25,3 +27,5 @@ const outputs = await model.generate_images({
 
 // Save the generated image
 await outputs[0].save("test.png");
+
+    </script>
