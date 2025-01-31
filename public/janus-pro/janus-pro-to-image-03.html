@@ -67,9 +67,12 @@ async function generateImage(prompt, processor, model) {
   console.log("Model loaded.");
 
   // Example usage
+  
+  console.log("Generate Image");
   const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
   const image = await generateImage(prompt, processor, model);
 
+  console.log("Image generated, showing it, saving it");
   if (image) {
     const blob = await image.toBlob();
     const imgUrl = URL.createObjectURL(blob);
@@ -80,3 +83,7 @@ async function generateImage(prompt, processor, model) {
   }
 })();
 </script>
+<body>
+  <hi>onnx-community/Janus-Pro-1B-ONNX text to image</hi>
+  ctrl-shift-i to see console.
+</body>
