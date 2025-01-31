@@ -1,89 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+  
 <script type="module">
-import {
-  AutoProcessor,
-  MultiModalityCausalLM,
-} from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+import { AutoProcessor, MultiModalityCausalLM } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
 
-// Define constants
-const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
-const MAX_NEW_TEXT_TOKENS = 1024;
-let fp16_supported = false;
+window.myLoadModel = myLoadModel;
+window.myAskQuestion = myAskQuestion;
 
-/**
- * Check WebGPU support
- */
-async function checkWebGPU() {
-  try {
-    const adapter = await navigator.gpu.requestAdapter();
-    fp16_supported = adapter && adapter.features.has("shader-f16");
-  } catch (e) {
-    console.error("WebGPU not supported:", e);
-  }
-}
-
-/**
- * Load model and processor
- */
-async function loadModel() {
-  await checkWebGPU();
-  const model_id = "onnx-community/Janus-Pro-1B-ONNX";
-  
-  const processor = await AutoProcessor.from_pretrained(model_id);
-  const model = await MultiModalityCausalLM.from_pretrained(model_id, {
-    dtype: fp16_supported ? "fp16" : "fp32",
-    device: "webgpu"     // device: "wasm"
-  });
-  
-  return { processor, model };
-}
-
-/**
- * Generate an image from text prompt
- */
-async function generateImage(prompt, processor, model) {
-  if (!prompt.startsWith(IMAGE_GENERATION_COMMAND_PREFIX)) return;
-  
-  const text = prompt.replace(IMAGE_GENERATION_COMMAND_PREFIX, "");
-  const conversation = [{ role: "<|User|>", content: text }];
-  const inputs = await processor(conversation, { chat_template: "text_to_image" });
-  
-  const num_image_tokens = processor.num_image_tokens;
-  const outputs = await model.generate_images({
-    ...inputs,
-    min_new_tokens: num_image_tokens,
-    max_new_tokens: num_image_tokens,
-    do_sample: true,
-  });
-  
-  return outputs[0];
-}
-
-/**
- * Main function to run on page load
- */
-(async function main() {
-  console.log("Loading model...");
-  const { processor, model } = await loadModel();
-  console.log("Model loaded.");
-
-  // Example usage
-  
-  console.log("Generate Image");
-  const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
-  const image = await generateImage(prompt, processor, model);
-
-  console.log("Image generated, showing it, saving it");
-  if (image) {
-    const blob = await image.toBlob();
-    const imgUrl = URL.createObjectURL(blob);
+let myWorker = new Worker(
+  URL.createObjectURL(new Blob([`
+    import { AutoProcessor, MultiModalityCausalLM } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
     
-    const imgElement = document.createElement("img");
-    imgElement.src = imgUrl;
-    document.body.appendChild(imgElement);
+    let processor;
+    let model;
+
+    self.onmessage = async (event) => {
+      const { type, modelName, conversation } = event.data;
+
+      if (type === 'load') {
+        processor = await AutoProcessor.from_pretrained(modelName);
+        model = await MultiModalityCausalLM.from_pretrained(modelName, { execution_provider: "webgpu" });
+        self.postMessage({ type: 'loaded' });
+      } else if (type === 'generate') {
+        if (!processor || !model) {
+          self.postMessage({ type: 'error', message: 'Model not loaded' });
+          return;
+        }
+
+        const inputs = await processor(conversation, { chat_template: "text_to_image" });
+
+        const num_image_tokens = processor.num_image_tokens;
+        const outputs = await model.generate_images({
+          ...inputs,
+          min_new_tokens: num_image_tokens,
+          max_new_tokens: num_image_tokens,
+          do_sample: true,
+        });
+
+        self.postMessage({ type: 'result', output: outputs[0] });
+      }
+    };
+  `], { type: 'application/javascript' }))
+);
+
+myWorker.onmessage = (event) => {
+  if (event.data.type === 'loaded') {
+    document.getElementById('myLoadButton').disabled = true;
+    document.getElementById('myAskButton').disabled = false;
+  } else if (event.data.type === 'result') {
+    document.getElementById('myTextarea01').value = 'Image generated successfully.';
+    console.log(event.data.output);
+  } else if (event.data.type === 'error') {
+    console.error(event.data.message);
   }
-})();
+};
+
+async function myLoadModel() {
+  let myModel = document.getElementById('myModelInput').value;
+  myWorker.postMessage({ type: 'load', modelName: myModel });
+}
+
+async function myAskQuestion() {
+  document.getElementById('myTextarea01').value = '';
+
+  let myContent = document.getElementById('myArea01').value;
+  const conversation = [{ role: "<|User|>", content: myContent }];
+
+  myWorker.postMessage({ type: 'generate', conversation });
+}
 </script>
+
+</head>
 <body>
-  <hi>onnx-community/Janus-Pro-1B-ONNX text to image</hi>
-  ctrl-shift-i to see console.
+<h1>DeepSeek-R1-webgpu in the browser</h1>
+
+Open the console. shift-ctrl-i <br><br>
+
+Uses the Web-gpu model: 
+<input id="myModelInput" type=text size=60 value="onnx-community/Janus-Pro-1B-ONNX"> <br><br>
+
+<input id="myLoadButton" type="button" value="Load Model" onclick="myLoadModel()"> Data warning ~1.4 GB saved to cache<br><br>  
+
+<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">make a high resolution image of a kitten.</textarea><br>
+<input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled><br><br>
+
+<textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
+
 </body>
+</html>
