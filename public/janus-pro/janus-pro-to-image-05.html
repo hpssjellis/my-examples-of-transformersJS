@@ -1,0 +1,119 @@
+<script type="module">
+import {
+  AutoProcessor,
+  MultiModalityCausalLM,
+  BaseStreamer,
+  TextStreamer,
+  InterruptableStoppingCriteria,
+} from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+// Define constants
+const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
+const MAX_NEW_TEXT_TOKENS = 1024;
+let fp16_supported = false;
+
+/**
+ * Check WebGPU support
+ */
+async function checkWebGPU() {
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    fp16_supported = adapter && adapter.features.has("shader-f16");
+  } catch (e) {
+    console.error("WebGPU not supported:", e);
+  }
+}
+
+/**
+ * Image Generation Pipeline Singleton
+ */
+class ImageGenerationPipeline {
+  static model_id = "onnx-community/Janus-Pro-1B-ONNX";
+
+  static async getInstance() {
+    await checkWebGPU();
+    this.processor ??= await AutoProcessor.from_pretrained(this.model_id);
+    this.model ??= await MultiModalityCausalLM.from_pretrained(this.model_id, {
+      dtype: fp16_supported ? "fp16" : "fp32",
+      device: "webgpu",
+    });
+    return { processor: this.processor, model: this.model };
+  }
+}
+
+/**
+ * Progress Streamer for tracking generation
+ */
+class ProgressStreamer extends BaseStreamer {
+  constructor(total, on_progress) {
+    super();
+    this.total = total;
+    this.on_progress = on_progress;
+    this.count = null;
+    this.start_time = null;
+  }
+
+  put(value) {
+    if (this.count === null) {
+      this.count = 0;
+      this.start_time = performance.now();
+      return;
+    }
+    const progress = ++this.count / this.total;
+    this.on_progress({ count: this.count, total: this.total, progress });
+  }
+
+  end() {}
+}
+
+const stopping_criteria = new InterruptableStoppingCriteria();
+
+/**
+ * Generate an image from text prompt
+ */
+async function generateImage(prompt) {
+  if (!prompt.startsWith(IMAGE_GENERATION_COMMAND_PREFIX)) return;
+
+  const { processor, model } = await ImageGenerationPipeline.getInstance();
+  const text = prompt.replace(IMAGE_GENERATION_COMMAND_PREFIX, "");
+  const conversation = [{ role: "<|User|>", content: text }];
+  const inputs = await processor(conversation, { chat_template: "text_to_image" });
+  
+  const num_image_tokens = processor.num_image_tokens;
+  const streamer = new ProgressStreamer(num_image_tokens, (output) => {
+    console.log("Progress:", output.progress);
+  });
+
+  const outputs = await model.generate_images({
+    ...inputs,
+    min_new_tokens: num_image_tokens,
+    max_new_tokens: num_image_tokens,
+    do_sample: true,
+    streamer,
+  });
+
+  return outputs[0];
+}
+
+/**
+ * Main function to run on page load
+ */
+(async function main() {
+  console.log("Loading model...");
+  await ImageGenerationPipeline.getInstance();
+  console.log("Model loaded.");
+
+  // Example usage
+  const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
+  const image = await generateImage(prompt);
+
+  if (image) {
+    const blob = await image.toBlob();
+    const imgUrl = URL.createObjectURL(blob);
+    
+    const imgElement = document.createElement("img");
+    imgElement.src = imgUrl;
+    document.body.appendChild(imgElement);
+  }
+})();
+</script>
