@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+  
+<script type="module">
+import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.1';
+  
+  // needed for buttons to call module functions
+window.myLoadModel = myLoadModel
+window.myAskQuestion = myAskQuestion
+let generator
+let myModel 
+
+let myContent = document.getElementById('myArea01').value 
+console.log(myContent)
+
+  
+// Create a text generation pipeline
+async function  myLoadModel(){
+  myModel = document.getElementById('myModelInput').value
+  generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu" },);
+  document.getElementById('myLoadButton').disabled = true
+  document.getElementById('myAskButton').disabled = false
+    
+}
+
+
+async function myAskQuestion(){
+document.getElementById('myTextarea01').value ='' 
+myContent = document.getElementById('myArea01').value 
+
+// Define the list of messages
+const messages = [{ role: "user", content: myContent },];
+console.log(myContent)
+const streamer = new TextStreamer(generator.tokenizer, {
+  skip_prompt: true,
+  callback_function: (text) => {document.getElementById('myTextarea01').value += text}, // Optional callback function   
+})
+
+  
+// Generate a response
+const myMaxT = document.getElementById('myMaxTokens').value
+const output = await generator(messages, { max_new_tokens: myMaxT, do_sample: false, streamer });  // max_new_tokens was 512 but way to long
+let fullReply = output[0].generated_text.at(-1).content
+console.log(fullReply);
+let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "")
+//let myReply = fullReply
+document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}` 
+
+
+  }  
+
+</script>
+</head>
+<body>
+<h1>DeepSeek-R1-webgpu in the browser</h1>
+  
+Open the console. shift-ctrl-i <br><br>
+  
+Fully javascript activated. If you don't want to completely download 
+<a href="onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX"> 
+onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX </a> then you should probably close this page.<br><br>
+It will load from cache if downloaded once.<br><br>
+
+Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=60 value="onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX"> <br><br>
+
+<input id="myLoadButton" type="button" value="Load Model" onclick="myLoadModel()"> Data warning ~1.4 GB saved to cache<br><br>  
+<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
+Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512">
+<input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled><br><br>
+
+<textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
+<input type=button value="copy" onclick="{  
+  let myTextarea = document.getElementById('myTextarea01');
+  myTextarea.select(); 
+  document.execCommand('copy'); // Copy to clipboard
+}"><br>
+Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
+Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
+My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a>
+My Github <a href="https://github.com/hpssjellis">Profile</a><br>
+
+
+
+
+
+  
+</body>
+</html>
