@@ -22,8 +22,8 @@ console.log(myContent)
 async function  myLoadModel(){
   myModel = document.getElementById('myModelInput').value
 
-processor = await AutoProcessor.from_pretrained(myModel);
-model = await MultiModalityCausalLM.from_pretrained(myModel);
+  processor = await AutoProcessor.from_pretrained(myModel);
+  model = await MultiModalityCausalLM.from_pretrained(myModel);
 
 
   
