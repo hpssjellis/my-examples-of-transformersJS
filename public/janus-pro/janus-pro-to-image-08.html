@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+  
+<script type="module">
+
+
+
+
+
+  
+
+  
+import {
+  AutoProcessor,
+  MultiModalityCausalLM,
+} from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+// Define constants
+const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
+const MAX_NEW_TEXT_TOKENS = 1024;
+let fp16_supported = false;
+
+/**
+ * Check WebGPU support
+ */
+async function checkWebGPU() {
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    fp16_supported = adapter && adapter.features.has("shader-f16");
+  } catch (e) {
+    console.error("WebGPU not supported:", e);
+  }
+}
+
+/**
+ * Load model and processor
+ */
+async function loadModel() {
+  await checkWebGPU();
+  const model_id = "onnx-community/Janus-Pro-1B-ONNX";
+  
+  const processor = await AutoProcessor.from_pretrained(model_id);
+  const model = await MultiModalityCausalLM.from_pretrained(model_id, {
+      dtype: fp16_supported
+        ? {
+            prepare_inputs_embeds: "q4",
+            language_model: "q4f16",
+            lm_head: "fp16",
+            gen_head: "fp16",
+            gen_img_embeds: "fp16",
+            image_decode: "fp32",
+          }
+        : {
+            prepare_inputs_embeds: "fp32",
+            language_model: "q4",
+            lm_head: "fp32",
+            gen_head: "fp32",
+            gen_img_embeds: "fp32",
+            image_decode: "fp32",
+          },
+      device: {
+        prepare_inputs_embeds: "wasm", // TODO use "webgpu" when bug is fixed
+        language_model: "webgpu",
+        lm_head: "webgpu",
+        gen_head: "webgpu",
+        gen_img_embeds: "webgpu",
+        image_decode: "webgpu",
+      },
+    //  progress_callback,
+    });
+     // return Promise.all([processor, model]);
+      return { processor, model };
+  }
+
+
+  /*
+  const model = await MultiModalityCausalLM.from_pretrained(model_id, {
+    //dtype: fp16_supported ? "fp16" : "fp32",                                // "q4", "q8", "q4f16",  "fp16" : "fp32",      
+    dtype: "q4f16",                               // "q4", "q8", "q4f16",  "fp16" : "fp32",      
+    device: "webgpu"     // device: "wasm"
+  });
+  
+  return { processor, model };
+}
+
+*/
+
+  
+/**
+ * Generate an image from text prompt
+ */
+async function generateImage(prompt, processor, model) {
+  if (!prompt.startsWith(IMAGE_GENERATION_COMMAND_PREFIX)) return;
+  
+  const text = prompt.replace(IMAGE_GENERATION_COMMAND_PREFIX, "");
+  const conversation = [{ role: "<|User|>", content: text }];
+  const inputs = await processor(conversation, { chat_template: "text_to_image" });
+  
+  const num_image_tokens = processor.num_image_tokens;
+  const outputs = await model.generate_images({
+    ...inputs,
+    min_new_tokens: num_image_tokens,
+    max_new_tokens: num_image_tokens,
+    do_sample: true,
+  });
+  
+  return outputs[0];
+}
+
+/**
+ * Main function to run on page load
+ */
+(async function main() {
+  console.log("Loading model...");
+  const { processor, model } = await loadModel();
+  console.log("Model loaded.");
+
+  // Example usage
+  
+  console.log("Generate Image");
+  const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
+  const image = await generateImage(prompt, processor, model);
+
+  console.log("Image generated, showing it, saving it");
+  if (image) {
+    const blob = await image.toBlob();
+    const imgUrl = URL.createObjectURL(blob);
+    
+    const imgElement = document.createElement("img");
+    imgElement.src = imgUrl;
+    document.body.appendChild(imgElement);
+  }
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+  /*
+  // needed for buttons to call module functions
+window.myLoadModel = myLoadModel
+window.myAskQuestion = myAskQuestion
+//let generator
+let processor
+let model
+let myModel 
+
+let myContent = document.getElementById('myArea01').value 
+console.log(myContent)
+
+  
+// Create a text generation pipeline
+async function  myLoadModel(){
+  myModel = document.getElementById('myModelInput').value
+
+  processor = await AutoProcessor.from_pretrained(myModel);
+  model = await MultiModalityCausalLM.from_pretrained(myModel);
+
+
+  
+//  generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu" },);
+  document.getElementById('myLoadButton').disabled = true
+  document.getElementById('myAskButton').disabled = false
+    
+}
+
+
+async function myAskQuestion(){
+document.getElementById('myTextarea01').value ='' 
+myContent = document.getElementById('myArea01').value 
+
+// Define the list of messages
+//const conversation = [{ role: "user", content: myContent },];
+  const conversation = [
+  {
+    role: "<|User|>",
+    content: "A stunning princess from kabul in red, white traditional clothing, blue eyes, brown hair",
+  },
+];
+console.log(myContent)
+  const inputs = await processor(conversation, { chat_template: "text_to_image" });
+
+// Generate response
+const num_image_tokens = processor.num_image_tokens;
+const outputs = await model.generate_images({
+  ...inputs,
+  min_new_tokens: num_image_tokens,
+  max_new_tokens: num_image_tokens,
+  do_sample: true,
+});
+
+  // Save the generated image
+await outputs[0].save("test.png");
+
+
+  */
+/*  
+const streamer = new TextStreamer(generator.tokenizer, {
+  skip_prompt: true,
+  callback_function: (text) => {document.getElementById('myTextarea01').value += text}, // Optional callback function   
+})
+*/
+
+  /*
+// Generate a response
+const myMaxT = document.getElementById('myMaxTokens').value
+const output = await generator(messages, { max_new_tokens: myMaxT, do_sample: false, streamer });  // max_new_tokens was 512 but way to long
+let fullReply = output[0].generated_text.at(-1).content
+console.log(fullReply);
+let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "")
+//let myReply = fullReply
+document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}` 
+*/
+
+  }  
+
+</script>
+</head>
+<body>
+<h1>Janus-Pro text to Image based on DeepSeek-R1-webgpu in the browser</h1>
+  
+Open the console. shift-ctrl-i <br><br>
+  
+Fully javascript activated. If you don't want to completely download 
+<a href="https://huggingface.co/onnx-community/Janus-Pro-1B-ONNX"> 
+onnx-community/Janus-Pro-1B-ONNX </a> then you should probably close this page.<br><br>
+It will load from cache if downloaded once. If you first download this single weebpage and download the model it will work offline<br><br>
+
+Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=60 value="onnx-community/Janus-Pro-1B-ONNX"> <br><br>
+
+<input id="myLoadButton" type="button" value="Load Model" onclick="myLoadModel()"> Data warning ~2.4 GB saved to cache<br><br>  
+<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">make a high resolution image of a kitten.</textarea><br>
+<1-- Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512">  -->
+<input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled><br><br>
+
+<textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
+  <!--
+<input type=button value="copy" onclick="{  
+  let myTextarea = document.getElementById('myTextarea01');
+  myTextarea.select(); 
+  document.execCommand('copy'); // Copy to clipboard
+}"><br>  -->
+Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
+Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
+My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a>
+My Github <a href="https://github.com/hpssjellis">Profile</a><br>
+
+
+
+
+
+  
+</body>
+</html>
