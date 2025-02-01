@@ -128,7 +128,7 @@ async function generateImage(prompt, processor, myJanusProModel) {
    // const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
     const image = await generateImage(myPrompt, processor, myJanusProModel);
   
-    console.log("Image generated...");
+    await console.log("Image generated...");
     if (image) {
       const blob = await image.toBlob();
       const imgUrl = URL.createObjectURL(blob);
@@ -137,7 +137,7 @@ async function generateImage(prompt, processor, myJanusProModel) {
       imgElement.src = imgUrl;
       document.body.appendChild(imgElement);
     }  
-    console.log("Image on webpage");
+    await console.log("Image on webpage");
   }
     
 
