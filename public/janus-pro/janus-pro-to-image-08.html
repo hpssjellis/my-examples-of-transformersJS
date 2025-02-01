@@ -119,11 +119,11 @@ async function generateImage(prompt, processor, model) {
   if (image) {
     const blob = await image.toBlob();
     const imgUrl = URL.createObjectURL(blob);
-    document.getElementById(myOutputImage).src = 
+    document.getElementById(myOutputImage).src = imgUrl;
     
-    const imgElement = document.createElement("img");
-    imgElement.src = imgUrl;
-    document.body.appendChild(imgElement);
+   // const imgElement = document.createElement("img");
+   // imgElement.src = imgUrl;
+   // document.body.appendChild(imgElement);
   }
 })();
 
