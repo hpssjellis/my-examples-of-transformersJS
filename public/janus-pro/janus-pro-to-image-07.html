@@ -60,7 +60,7 @@ async function loadModel() {
       return Promise.all([processor, model]);
      //  return { processor, model };
   }
-}
+
 
   /*
   const model = await MultiModalityCausalLM.from_pretrained(model_id, {
@@ -120,6 +120,8 @@ async function generateImage(prompt, processor, model) {
     document.body.appendChild(imgElement);
   }
 })();
+
+  
 </script>
 <body>
   <h1>onnx-community/Janus-Pro-1B-ONNX text to image</h1>
