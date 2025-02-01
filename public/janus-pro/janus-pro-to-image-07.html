@@ -57,6 +57,10 @@ async function loadModel() {
       },
       progress_callback,
     });
+      return Promise.all([processor, model]);
+     //  return { processor, model };
+  }
+}
 
   /*
   const model = await MultiModalityCausalLM.from_pretrained(model_id, {
