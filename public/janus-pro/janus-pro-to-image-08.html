@@ -15,8 +15,8 @@
 import { AutoProcessor, MultiModalityCausalLM, } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
 
   // needed for module functions to be called from buttons
-let window.myLoadModel = myLoadModel
-let window.myMain = myMain
+window.myLoadModel = myLoadModel
+window.myMain = myMain
 
 // Define constants
 const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
