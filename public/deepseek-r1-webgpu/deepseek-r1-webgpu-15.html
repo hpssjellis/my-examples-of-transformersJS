@@ -19,8 +19,8 @@ console.log(myContent)
 // Create a text generation pipeline
 async function  myLoadModel(){
   myModel = document.getElementById('myModelInput').value
- // generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu" },);   // this works
-  generator = await pipeline("text-generation", myModel, { dtype: "q4", device: "webgpu" },);
+  generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu" },);   // this works
+  //  generator = await pipeline("text-generation", myModel, { dtype: "q4", device: "webgpu" },);   // did not work
   document.getElementById('myLoadButton').disabled = true
   document.getElementById('myAskButton').disabled = false
     
