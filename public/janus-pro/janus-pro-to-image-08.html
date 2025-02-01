@@ -18,6 +18,10 @@ import { AutoProcessor, MultiModalityCausalLM, } from 'https://cdn.jsdelivr.net/
 window.myLoadModel = myLoadModel
 window.myMain = myMain
 
+// make these global so the functions can share data.  
+let processor
+let model
+
 // Define constants
 const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
 const MAX_NEW_TEXT_TOKENS = 1024;
@@ -40,12 +44,12 @@ async function checkWebGPU() {
  * Load model and processor
  */
 async function myLoadModel() {
-  let myModel = document.getElementById('myModelInput').value
+  let myModelName = document.getElementById('myModelInput').value
   await checkWebGPU();
   //const model_id = "onnx-community/Janus-Pro-1B-ONNX";
   
-  const processor = await AutoProcessor.from_pretrained(myModel);
-  const model = await MultiModalityCausalLM.from_pretrained(myModel, {
+  processor = await AutoProcessor.from_pretrained(myModelName);
+  model = await MultiModalityCausalLM.from_pretrained(myModelName, {
       dtype: fp16_supported
         ? {
             prepare_inputs_embeds: "q4",
