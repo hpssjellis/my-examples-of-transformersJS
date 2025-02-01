@@ -20,7 +20,7 @@ window.myMain = myMain
 
 // make these global so the functions can share data.  
 let processor
-let model
+//let model
 
 // Define constants
 const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
@@ -49,7 +49,7 @@ async function myLoadModel() {
   //const model_id = "onnx-community/Janus-Pro-1B-ONNX";
   
   processor = await AutoProcessor.from_pretrained(myModelName);
-  model = await MultiModalityCausalLM.from_pretrained(myModelName, {
+  const model = await MultiModalityCausalLM.from_pretrained(myModelName, {
       dtype: fp16_supported
         ? {
             prepare_inputs_embeds: "q4",
@@ -123,12 +123,12 @@ async function generateImage(prompt, processor, model) {
 
   async function myMain() {
 
-    console.log("Generate Image");
+    console.log("Generate Image...");
     let myPrompt = document.getElementById('myArea01').value 
    // const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
     const image = await generateImage(myPrompt, processor, model);
   
-    console.log("Image generated, showing it, saving it");
+    console.log("Image generated...");
     if (image) {
       const blob = await image.toBlob();
       const imgUrl = URL.createObjectURL(blob);
@@ -136,7 +136,8 @@ async function generateImage(prompt, processor, model) {
       const imgElement = document.createElement("img");
       imgElement.src = imgUrl;
       document.body.appendChild(imgElement);
-    }
+    }  
+    console.log("Image on webpage");
   }
     
 
