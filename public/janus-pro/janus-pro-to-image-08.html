@@ -20,7 +20,7 @@ window.myMain = myMain
 
 // make these global so the functions can share data.  
 let processor
-//let model
+let myJanusmodel
 
 // Define constants
 const IMAGE_GENERATION_COMMAND_PREFIX = "/imagine ";
@@ -49,7 +49,7 @@ async function myLoadModel() {
   //const model_id = "onnx-community/Janus-Pro-1B-ONNX";
   
   processor = await AutoProcessor.from_pretrained(myModelName);
-  const model = await MultiModalityCausalLM.from_pretrained(myModelName, {
+  myJanusProModel = await MultiModalityCausalLM.from_pretrained(myModelName, {
       dtype: fp16_supported
         ? {
             prepare_inputs_embeds: "q4",
@@ -81,7 +81,7 @@ async function myLoadModel() {
   
       document.getElementById('myLoadButton').disabled = true
       document.getElementById('myAskButton').disabled = false
-      return { processor, model };
+      return { processor, myJanusProModel };
   }
 
 
@@ -101,7 +101,7 @@ async function myLoadModel() {
 /**
  * Generate an image from text prompt
  */
-async function generateImage(prompt, processor, model) {
+async function generateImage(prompt, processor, myJanusProModel) {
   if (!prompt.startsWith(IMAGE_GENERATION_COMMAND_PREFIX)) return;
   
   const text = prompt.replace(IMAGE_GENERATION_COMMAND_PREFIX, "");
@@ -109,7 +109,7 @@ async function generateImage(prompt, processor, model) {
   const inputs = await processor(conversation, { chat_template: "text_to_image" });
   
   const num_image_tokens = processor.num_image_tokens;
-  const outputs = await model.generate_images({
+  const outputs = await myJanusProModel.generate_images({
     ...inputs,
     min_new_tokens: num_image_tokens,
     max_new_tokens: num_image_tokens,
@@ -126,7 +126,7 @@ async function generateImage(prompt, processor, model) {
     console.log("Generate Image...");
     let myPrompt = document.getElementById('myArea01').value 
    // const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
-    const image = await generateImage(myPrompt, processor, model);
+    const image = await generateImage(myPrompt, processor, myJanusProModel);
   
     console.log("Image generated...");
     if (image) {
