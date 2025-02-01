@@ -19,7 +19,7 @@ window.myLoadModel = myLoadModel
 window.myMain = myMain
 
 // make these global so the functions can share data.  
-let processor
+let myProcessor
 let myJanusProModel
 
 // Define constants
@@ -48,7 +48,7 @@ async function myLoadModel() {
   await checkWebGPU();
   //const model_id = "onnx-community/Janus-Pro-1B-ONNX";
   
-  processor = await AutoProcessor.from_pretrained(myModelName);
+  myProcessor = await AutoProcessor.from_pretrained(myModelName);
   myJanusProModel = await MultiModalityCausalLM.from_pretrained(myModelName, {
       dtype: fp16_supported
         ? {
@@ -81,7 +81,7 @@ async function myLoadModel() {
   
       document.getElementById('myLoadButton').disabled = true
       document.getElementById('myAskButton').disabled = false
-      return { processor, myJanusProModel };
+      return { myProcessor, myJanusProModel };
   }
 
 
@@ -92,7 +92,7 @@ async function myLoadModel() {
     device: "webgpu"     // device: "wasm"
   });
   
-  return { processor, model };
+  return { myProcessor, model };
 }
 
 */
@@ -101,14 +101,14 @@ async function myLoadModel() {
 /**
  * Generate an image from text prompt
  */
-async function generateImage(prompt, processor, myJanusProModel) {
+async function generateImage(prompt, myProcessor, myJanusProModel) {
   if (!prompt.startsWith(IMAGE_GENERATION_COMMAND_PREFIX)) return;
   
   const text = prompt.replace(IMAGE_GENERATION_COMMAND_PREFIX, "");
   const conversation = [{ role: "<|User|>", content: text }];
-  const inputs = await processor(conversation, { chat_template: "text_to_image" });
+  const inputs = await myProcessor(conversation, { chat_template: "text_to_image" });
   
-  const num_image_tokens = processor.num_image_tokens;
+  const num_image_tokens = myProcessor.num_image_tokens;
   const outputs = await myJanusProModel.generate_images({
     ...inputs,
     min_new_tokens: num_image_tokens,
@@ -126,18 +126,20 @@ async function generateImage(prompt, processor, myJanusProModel) {
     console.log("Generate Image...");
     let myPrompt = document.getElementById('myArea01').value 
    // const prompt = "/imagine A stunning princess from Kabul in red, white traditional clothing, blue eyes, brown hair";
-    const image = await generateImage(myPrompt, processor, myJanusProModel);
+    const image = await generateImage(myPrompt, myProcessor, myJanusProModel);
   
-    await console.log("Image generated...");
+    console.log("Image generated, now putting on the webpage");
     if (image) {
       const blob = await image.toBlob();
       const imgUrl = URL.createObjectURL(blob);
-      
-      const imgElement = document.createElement("img");
-      imgElement.src = imgUrl;
-      document.body.appendChild(imgElement);
+      document.getElementById('myOutputImage').src = imgUrl;
+    
+   // const imgElement = document.createElement("img");
+   // imgElement.src = imgUrl;
+   // document.body.appendChild(imgElement);
+
     }  
-    await console.log("Image on webpage");
+    console.log("Image on webpage");
   }
     
 
@@ -298,10 +300,6 @@ Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/p
 My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a><br>
 My Github <a href="https://github.com/hpssjellis">Profile</a><br>
 <h2>Image here, expect a delay</h2>
-
-
-
-
-<br><br><br><br><br><br><br><br>
+<img src="" id="myOutputImage" width= "95%" style="border-Color:blue; border-style:groove; border-width:3px; "><br><br>
 </body>
 </html>
