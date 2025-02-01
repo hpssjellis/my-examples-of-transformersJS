@@ -119,6 +119,7 @@ async function generateImage(prompt, processor, model) {
   if (image) {
     const blob = await image.toBlob();
     const imgUrl = URL.createObjectURL(blob);
+    document.getElementById(myOutputImage).src = 
     
     const imgElement = document.createElement("img");
     imgElement.src = imgUrl;
@@ -130,5 +131,7 @@ async function generateImage(prompt, processor, model) {
 </script>
 <body>
   <h1>onnx-community/Janus-Pro-1B-ONNX text to image</h1>
-  ctrl-shift-i to see console.
+  ctrl-shift-i to see console.<br>
+
+  <img src="" id="myOutputImage" width= "95%" style="border-Color:red; border-style:groove; border-width:3px; ">
 </body>
