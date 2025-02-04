@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Whisper-base Microphone Input</title>
   <script type="module">
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
+    import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
 
     window.startRecording = startRecording;
     window.stopRecording = stopRecording;
@@ -48,14 +48,15 @@
     // Transcribe audio
     async function transcribeAudio() {
       const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-      const reader = new FileReader();
-      reader.readAsArrayBuffer(audioBlob);
-      reader.onloadend = async () => {
-        const audioData = new Uint8Array(reader.result);
-        const result = await asrPipeline(audioData);
-        console.log("Transcription:", result.text);
-        alert("Transcription: " + result.text);
-      };
+      audioChunks = [];
+
+      // Convert audio to Float32Array using read_audio()
+      const audioData = await read_audio(URL.createObjectURL(audioBlob), 16000);
+
+      // Run inference
+      const result = await asrPipeline(audioData);
+      console.log("Transcription:", result.text);
+      alert("Transcription: " + result.text);
     }
   </script>
 </head>
