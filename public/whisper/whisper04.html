@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Microphone Input</title>
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
+
+    window.startRecording = startRecording;
+    window.stopRecording = stopRecording;
+    window.loadModel = loadModel;
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let asrPipeline;
+
+    // Load Whisper model
+    async function loadModel() {
+      asrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base");
+      document.getElementById('loadModelButton').disabled = true;
+      document.getElementById('startButton').disabled = false;
+      console.log("Model loaded.");
+    }
+
+    // Start recording
+    async function startRecording() {
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('stopButton').disabled = false;
+      audioChunks = [];
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+      mediaRecorder.onstop = transcribeAudio;
+      mediaRecorder.start();
+      console.log('Recording started');
+    }
+
+    // Stop recording
+    function stopRecording() {   
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').disabled = true;
+      mediaRecorder.stop();
+      console.log('Recording stopped');
+    }
+
+    // Transcribe audio
+    async function transcribeAudio() {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      const reader = new FileReader();
+      reader.readAsArrayBuffer(audioBlob);
+      reader.onloadend = async () => {
+        const audioData = new Uint8Array(reader.result);
+        const result = await asrPipeline(audioData);
+        console.log("Transcription:", result.text);
+        alert("Transcription: " + result.text);
+      };
+    }
+  </script>
+</head>
+<body>
+  <h1>Microphone Input to Whisper-base</h1>
+  <button id="loadModelButton" onclick="loadModel()">Load Model</button>
+  <button id="startButton" onclick="startRecording()" disabled>Start Recording</button>
+  <button id="stopButton" onclick="stopRecording()" disabled>Stop Recording</button>
+</body>
+</html>
