@@ -42,11 +42,12 @@
 
       processorNode.onaudioprocess = async (event) => {
         const audioData = event.inputBuffer.getChannelData(0);
-        if (audioData){
-          const result = await asrPipeline(audioData);
-          console.log(result)
-          document.getElementById('transcription').innerText = result.text;
+        const result = await asrPipeline(audioData);
+        console.log(result)
+        if (result.text != ' [BLANK_AUDIO]'){
+           document.getElementById('transcription').innerText += result.text;
         }
+
        // console.log("Transcription:", result.text);
       };
 
