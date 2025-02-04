@@ -37,7 +37,23 @@
       mediaRecorder.stop();
       console.log('Recording stopped');
     }
+    async function transcribeAudio() {
+      const audioBlob = new Blob(audioChunks);
+      audioChunks = [];
 
+      const audioArrayBuffer = await audioBlob.arrayBuffer();
+      const audioContext = new AudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(audioArrayBuffer);
+      const float32Array = audioBuffer.getChannelData(0); // Assuming mono channel
+
+      const tokenizer = await transformers.pipeline('tokenizer', modelURL);
+      const model = await transformers.pipeline('automatic-speech-recognition', modelURL);
+      const input = { buffer: float32Array };
+      
+      const result = await model(input, tokenizer);
+      
+
+  /*
     // Function to transcribe audio
     async function transcribeAudio() {
       const audioBlob = new Blob(audioChunks);
@@ -53,6 +69,9 @@
       console.log(result.text);
     }
 
+
+
+  */
     startButton.addEventListener('click', startRecording);
     stopButton.addEventListener('click', stopRecording);
   </script>
