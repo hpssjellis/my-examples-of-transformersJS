@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Whisper-base Live Transcription</title>
   <script type="module">
-    import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
+   // import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';   // use to test if latest works
+
+    import { pipeline, read_audio } from  'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2';
 
     window.startRecording = startRecording;
     window.stopRecording = stopRecording;
