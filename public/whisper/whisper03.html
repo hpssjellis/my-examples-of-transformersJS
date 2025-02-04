@@ -40,11 +40,14 @@
 
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').disabled = false;
       console.log("Model loaded.");
     }
 
     // Start recording
     async function startRecording() {
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('stopButton').disabled = false;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
@@ -54,7 +57,9 @@
     }
 
     // Stop recording
-    function stopRecording() {
+    function stopRecording() {   
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').disabled = true;
       mediaRecorder.stop();
       console.log('Recording stopped');
     }
@@ -79,6 +84,6 @@
   <h1>Microphone Input to Whisper-base</h1>
   <button id="loadModelButton" onclick="loadModel()">Load Model</button>
   <button id="startButton" onclick="startRecording()" disabled>Start Recording</button>
-  <button id="stopButton" onclick="stopRecording()">Stop Recording</button>
+  <button id="stopButton" onclick="stopRecording()" disabled>Stop Recording</button>
 </body>
 </html>
