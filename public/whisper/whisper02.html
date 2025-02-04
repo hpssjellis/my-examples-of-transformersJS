@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Microphone Input</title>
+  <script type="module">
+    import { pipeline, TextStreamer, AutoProcessor, MultiModalityCausalLM } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+    window.startRecording = startRecording;
+    window.stopRecording = stopRecording;
+    window.loadModel = loadModel;
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let whisperModel;
+    let whisperProcessor;
+
+    // Check WebGPU support
+    async function checkWebGPU() {
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        return adapter && adapter.features.has("shader-f16");
+      } catch (e) {
+        console.error("WebGPU not supported:", e);
+        return false;
+      }
+    }
+
+    // Load Whisper model and processor
+    async function loadModel() {
+      const modelURL = 'https://huggingface.co/onnx-community/whisper-base';
+      const fp16_supported = await checkWebGPU();
+
+      whisperProcessor = await AutoProcessor.from_pretrained(modelURL);
+      whisperModel = await MultiModalityCausalLM.from_pretrained(modelURL, {
+        dtype: fp16_supported ? "fp16" : "fp32",
+        device: fp16_supported ? "webgpu" : "wasm"
+      });
+
+      document.getElementById('loadModelButton').disabled = true;
+      document.getElementById('startButton').disabled = false;
+      console.log("Model loaded.");
+    }
+
+    // Start recording
+    async function startRecording() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+      mediaRecorder.onstop = transcribeAudio;
+      mediaRecorder.start();
+      console.log('Recording started');
+    }
+
+    // Stop recording
+    function stopRecording() {
+      mediaRecorder.stop();
+      console.log('Recording stopped');
+    }
+
+    // Transcribe audio
+    async function transcribeAudio() {
+      const audioBlob = new Blob(audioChunks);
+      audioChunks = [];
+
+      const audioArrayBuffer = await audioBlob.arrayBuffer();
+      const audioContext = new AudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(audioArrayBuffer);
+      const float32Array = audioBuffer.getChannelData(0);
+
+      const inputs = await whisperProcessor(audioBuffer);
+      const result = await whisperModel(inputs);
+      console.log(result.text);
+    }
+  </script>
+</head>
+<body>
+  <h1>Microphone Input to Whisper-base</h1>
+  <button id="loadModelButton" onclick="loadModel()">Load Model</button>
+  <button id="startButton" onclick="startRecording()" disabled>Start Recording</button>
+  <button id="stopButton" onclick="stopRecording()">Stop Recording</button>
+</body>
+</html>
