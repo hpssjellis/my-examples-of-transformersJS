@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Microphone Input</title>
+</head>
+<body>
+  <h1>Microphone Input to Whisper-base</h1>
+  <button id="startButton">Start Recording</button>
+  <button id="stopButton">Stop Recording</button>
+
+  
+<script type="module">
+    import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+  
+    const modelURL = 'https://huggingface.co/onnx-community/whisper-base';
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // Function to start recording
+    async function startRecording() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+      mediaRecorder.onstop = transcribeAudio;
+      mediaRecorder.start();
+      console.log('Recording started');
+    }
+
+    // Function to stop recording
+    function stopRecording() {
+      mediaRecorder.stop();
+      console.log('Recording stopped');
+    }
+
+    // Function to transcribe audio
+    async function transcribeAudio() {
+      const audioBlob = new Blob(audioChunks);
+      audioChunks = [];
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = new Float32Array(arrayBuffer);
+      
+      const tokenizer = await transformers.pipeline('tokenizer', modelURL);
+      const model = await transformers.pipeline('automatic-speech-recognition', modelURL);
+      const input = { buffer: audioBuffer };
+      
+      const result = await model(input, tokenizer);
+      console.log(result.text);
+    }
+
+    startButton.addEventListener('click', startRecording);
+    stopButton.addEventListener('click', stopRecording);
+  </script>
+</body>
+</html>
