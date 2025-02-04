@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Live Transcription</title>
+  <script type="module">
+    import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
+
+    window.startRecording = startRecording;
+    window.stopRecording = stopRecording;
+    window.loadModel = loadModel;
+
+    let asrPipeline;
+    let audioContext;
+    let mediaStream;
+    let processorNode;
+
+    // Load Whisper model
+    async function loadModel() {
+      asrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base");
+      document.getElementById('loadModelButton').disabled = true;
+      document.getElementById('startButton').disabled = false;
+      console.log("Model loaded.");
+    }
+
+    // Start recording with real-time transcription
+    async function startRecording() {
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('stopButton').disabled = false;
+
+      audioContext = new AudioContext({ sampleRate: 16000 });
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioContext.createMediaStreamSource(mediaStream);
+
+      // Create a ScriptProcessorNode for real-time processing
+      processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+      source.connect(processorNode);
+      processorNode.connect(audioContext.destination);
+
+      processorNode.onaudioprocess = async (event) => {
+        const audioData = event.inputBuffer.getChannelData(0);
+        const result = await asrPipeline(audioData);
+        document.getElementById('transcription').innerText = result.text;
+        console.log("Transcription:", result.text);
+      };
+
+      console.log("Live transcription started...");
+    }
+
+    // Stop recording
+    function stopRecording() {
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').disabled = true;
+
+      processorNode.disconnect();
+      mediaStream.getTracks().forEach(track => track.stop());
+      audioContext.close();
+
+      console.log("Recording stopped.");
+    }
+  </script>
+</head>
+<body>
+  <h1>Live Whisper-base Transcription</h1>
+  <button id="loadModelButton" onclick="loadModel()">Load Model</button>
+  <button id="startButton" onclick="startRecording()" disabled>Start Live Transcription</button>
+  <button id="stopButton" onclick="stopRecording()" disabled>Stop</button>
+  <h2>Transcription:</h2>
+  <p id="transcription">...</p>
+</body>
+</html>
