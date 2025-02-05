@@ -31,7 +31,7 @@
     async function startRecording() {
       document.getElementById('startButton').disabled = true;
       document.getElementById('stopButton').disabled = false;
-
+      const myLanguage = document.getElementById('myLanguageSelect').value;
       myAudioContext = new AudioContext({ sampleRate: mySampleRate });
 
       await myAudioContext.audioWorklet.addModule(URL.createObjectURL(new Blob([`
@@ -51,8 +51,9 @@
         myAudioBuffer.push(...event.data);
         if (myAudioBuffer.length >= mySampleRate * myChunkDuration) {
           let myChunk = myAudioBuffer.slice(0, mySampleRate * myChunkDuration);
-          myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);
-          const myResult = await myASR(new Float32Array(myChunk));
+          myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);          
+          
+          const myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
           let myText = myResult.text.trim();  // just to check for special codes.
           console.log(myText)
           if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
