@@ -49,7 +49,7 @@ async function startRecording() {
   processorNode.onaudioprocess = async (event) => {
     const audioData = event.inputBuffer.getChannelData(0);
     
-console.log("Buffer length before:", audioBuffer.length);
+//console.log("Buffer length before:", audioBuffer.length);
     audioBuffer.push(...audioData);
 
 console.log("Buffer length before:", audioBuffer.length);
