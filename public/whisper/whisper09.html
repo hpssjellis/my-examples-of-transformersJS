@@ -57,7 +57,7 @@
 
           const result = await asrPipeline(float32Chunk);
           console.log(result);
-          if (result.text !== '[BLANK_AUDIO]') {
+          if (result.text !== '[BLANK_AUDIO]' || result.text !== ' [BLANK_AUDIO]') {
             document.getElementById('transcription').innerText += result.text;
           }
         }
