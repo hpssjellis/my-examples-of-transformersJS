@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Live Transcription</title>
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2';
+
+    window.loadModel = loadModel;
+    window.startRecording = startRecording;
+    window.stopRecording = stopRecording;
+
+    let myASR;
+    let myAudioContext;
+    let myWorkletNode;
+    let myAudioBuffer = [];
+    const mySampleRate = 16000;
+    const myChunkDuration = 3; // seconds
+
+    async function loadModel() {
+      let myLanguage = document.getElementById('myLanguageSelect').value;
+      myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-base", { language: myLanguage });
+      document.getElementById('loadModelButton').disabled = true;
+      document.getElementById('startButton').disabled = false;
+      console.log("Model loaded.");
+    }
+
+    async function startRecording() {
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('stopButton').disabled = false;
+
+      myAudioContext = new AudioContext({ sampleRate: mySampleRate });
+
+      await myAudioContext.audioWorklet.addModule(URL.createObjectURL(new Blob([`
+        class MyAudioProcessor extends AudioWorkletProcessor {
+          process(inputs) {
+            if (inputs[0].length > 0) {
+              this.port.postMessage(inputs[0][0]);
+            }
+            return true;
+          }
+        }
+        registerProcessor('my-audio-processor', MyAudioProcessor);
+      `], { type: "application/javascript" })));
+
+      myWorkletNode = new AudioWorkletNode(myAudioContext, 'my-audio-processor');
+      myWorkletNode.port.onmessage = async (event) => {
+        myAudioBuffer.push(...event.data);
+        if (myAudioBuffer.length >= mySampleRate * myChunkDuration) {
+          let myChunk = myAudioBuffer.slice(0, mySampleRate * myChunkDuration);
+          myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);
+          const myResult = await myASR(new Float32Array(myChunk));
+          let myText = myResult.text.trim();
+          if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
+            document.getElementById('transcription').innerText += myText;
+          }
+        }
+      };
+
+      const myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mySource = myAudioContext.createMediaStreamSource(myStream);
+      mySource.connect(myWorkletNode);
+
+      console.log("Live transcription started...");
+    }
+
+    function stopRecording() {
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').disabled = true;
+      myWorkletNode.disconnect();
+      myAudioContext.close();
+      console.log("Recording stopped.");
+    }
+  </script>
+</head>
+<body>
+  <h1>Live Whisper-base Transcription</h1>
+  <input type="button" id="loadModelButton" value="Load Model" onclick="loadModel()">
+  <input type="button" id="startButton" value="Start Live Transcription" onclick="startRecording()" disabled>
+  <input type="button" id="stopButton" value="Stop" onclick="stopRecording()" disabled><br>
+  
+  <select id="myLanguageSelect">
+    <option value="ar">Arabic</option>
+    <option value="zh">Chinese</option>
+    <option value="en" selected>English</option>
+    <option value="fr">French</option>
+    <option value="de">German</option>
+    <option value="it">Italian</option>
+    <option value="ja">Japanese</option>
+    <option value="ru">Russian</option>
+    <option value="es">Spanish</option>
+  </select>
+
+  <h2>Transcription:</h2>
+  <p id="transcription">...</p>
+</body>
+</html>
