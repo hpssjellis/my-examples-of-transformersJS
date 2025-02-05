@@ -4,8 +4,16 @@ self.onmessage = function(e) {
   const { type, sampleRate, chunkDuration } = e.data;
 
   if (type === 'startRecording') {
-    let audioContext = new (self.AudioContext || self.webkitAudioContext)({ sampleRate });
+    let audioContext = new (AudioContext || webkitAudioContext)({ sampleRate });
     let audioBuffer = [];
+
+
+
+    /*
+      audioContext = new AudioContext({ sampleRate: sampleRate });
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioContext.createMediaStreamSource(mediaStream);
+    */
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(mediaStream => {
       const source = audioContext.createMediaStreamSource(mediaStream);
