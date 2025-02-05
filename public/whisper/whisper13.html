@@ -18,7 +18,7 @@
     let mediaStream;
     let processorNode;
     let audioBuffer = [];
-    const sampleRate = 8000;   //16000;
+    const sampleRate = 16000;   // 8000 16000;
     const chunkDuration = 1; // seconds
 
     // Load Whisper model
@@ -65,7 +65,7 @@ console.log("Remaining buffer after slice:",  audioRemainder.length);
       audioBuffer.fill(0);
       
       console.log("Buffer after zero:",  audioBuffer.length);
-      audioBuffer.push(audioRemainder);
+      audioBuffer.push(...audioRemainder);
       console.log("Buffer after remainder",  audioBuffer.length);
 
       // Convert chunk to Float32Array
