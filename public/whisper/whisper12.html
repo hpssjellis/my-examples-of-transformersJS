@@ -28,6 +28,7 @@
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
       console.log("Model loaded.");
+      startRecording()   
     }
 
     // Start recording with real-time transcription
@@ -67,7 +68,7 @@
       };
 
       console.log("Live transcription started...");
-      startRecording()   
+
     }
 
     // Stop recording
