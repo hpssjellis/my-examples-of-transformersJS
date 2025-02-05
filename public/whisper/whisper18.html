@@ -16,10 +16,10 @@
     let myWorkletNode;
     let myAudioBuffer = [];
     const mySampleRate = 16000;
-    const myChunkDuration = 1; // seconds
+    const myChunkDuration = 3; // seconds
 
     async function loadModel() {
-      myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-base");     //Xenova/whisper-base is accurate but slow. Try:
+      myASR = await pipeline("automatic-speech-recognition", "enova/whisper-tiny");     //Xenova/whisper-base is accurate but slow. Try:
                                                                                          //Xenova/whisper-tiny (Fastest, but lower accuracy)
                                                                                          //Xenova/whisper-small (Good speed/accuracy balance)
       document.getElementById('loadModelButton').disabled = true;
@@ -53,9 +53,9 @@
           let myChunk = myAudioBuffer.slice(0, mySampleRate * myChunkDuration);
           myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);
           const myResult = await myASR(new Float32Array(myChunk));
-          let myText = myResult.text.trim();
+          let myText = myResult.text.trim();  // just to check for special codes.
           if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
-            document.getElementById('transcription').innerText += myText;
+            document.getElementById('transcription').innerText +=  myResult;
           }
         }
       };
