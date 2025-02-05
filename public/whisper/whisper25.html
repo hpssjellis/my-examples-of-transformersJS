@@ -10,6 +10,7 @@
     window.loadModel = loadModel;
     window.startRecording = startRecording;
     window.stopRecording = stopRecording;
+    window.saveBlobToFile = saveBlobToFile;
 
     let myASR;
     let myAudioContext;
@@ -80,6 +81,28 @@
       input.click();
     }
 
+    function saveBlobToFile() {
+      const scriptContent = `
+        class MyAudioProcessor extends AudioWorkletProcessor {
+          process(inputs) {
+            if (inputs[0].length > 0) {
+              this.port.postMessage(inputs[0][0]);
+            }
+            return true;
+          }
+        }
+        registerProcessor('my-audio-processor', MyAudioProcessor);
+      `;
+      const blob = new Blob([scriptContent], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audioProcessorScript.js';
+      a.click();
+      URL.revokeObjectURL(url);
+      console.log("Blob saved as a file.");
+    }
+
     window.loadAndAddAudioWorkletModuleFromFile = loadAndAddAudioWorkletModuleFromFile;
   </script>
 </head>
@@ -89,6 +112,7 @@
   <input type="button" id="startButton" value="Start Live Transcription" onclick="startRecording()" disabled>
   <input type="button" id="stopButton" value="Stop" onclick="stopRecording()" disabled><br>
   <input type="button" id="loadScriptButton" value="Load Script" onclick="loadAndAddAudioWorkletModuleFromFile()"><br>
+  <input type="button" id="saveBlobButton" value="Save Script" onclick="saveBlobToFile()"><br>
   
   <select id="myLanguageSelect">
     <option value="ar">Arabic</option>
