@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Live Transcription</title>
+  <script type="module">
+    window.startRecording = startRecording;
+    window.stopRecording = stopRecording;
+    window.loadModel = loadModel;
+
+    let audioContext;
+    let mediaStream;
+    let processorNode;
+    let audioBuffer = [];
+    const sampleRate = 16000;
+    const chunkDuration = 3; // seconds
+
+    // Initialize Web Worker
+    let myWorker = new Worker("webworker.js");
+
+    myWorker.onmessage = function (event) {
+      if (event.data.type === 'loaded') {
+        document.getElementById('loadModelButton').disabled = true;
+        document.getElementById('startButton').disabled = false;
+        console.log("Model loaded.");
+      } else if (event.data.type === 'transcription') {
+        let myTextTrimmed = event.data.text.trim();
+        if (!["[BLANK_AUDIO]", "[MUSIC]", "[BEEP]", "[COUGH]", "[INAUDIBLE]"].includes(myTextTrimmed)) {
+          document.getElementById('transcription').innerText += myTextTrimmed + " ";
+        }
+      } else if (event.data.type === 'error') {
+        console.error("Worker Error:", event.data.message);
+      }
+    };
+
+    function loadModel() {
+      let myLanguage = document.getElementById('myLanguageSelect').value;
+      myWorker.postMessage({ type: 'loadModel', language: myLanguage });
+    }
+
+    async function startRecording() {
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('stopButton').disabled = false;
+
+      audioContext = new AudioContext({ sampleRate: sampleRate });
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioContext.createMediaStreamSource(mediaStream);
+
+      processorNode = audioContext.createScriptProcessor(16384, 1, 1);
+      source.connect(processorNode);
+      processorNode.connect(audioContext.destination);
+
+      processorNode.onaudioprocess = function (event) {
+        const audioData = event.inputBuffer.getChannelData(0);
+        audioBuffer.push(...audioData);
+
+        if (audioBuffer.length >= sampleRate * chunkDuration) {
+          const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
+          audioBuffer = audioBuffer.slice(sampleRate * chunkDuration);
+          myWorker.postMessage({ type: 'transcribe', audioChunk: chunk });
+        }
+      };
+
+      console.log("Live transcription started...");
+    }
+
+    function stopRecording() {
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').disabled = true;
+
+      processorNode.disconnect();
+      mediaStream.getTracks().forEach(track => track.stop());
+      audioContext.close();
+
+      console.log("Recording stopped.");
+    }
+  </script>
+</head>
+<body>
+  <h1>Live Whisper-base Transcription</h1>
+  <input type="button" value="Load Model" id="loadModelButton" onclick="loadModel()">
+  <input type="button" value="Start Live Transcription" id="startButton" onclick="startRecording()" disabled>
+  <input type="button" value="Stop" id="stopButton" onclick="stopRecording()" disabled><br>
+  
+  <select id="myLanguageSelect">
+    <option value="ar">Arabic</option>
+    <option value="zh">Chinese</option>
+    <option value="en" selected>English</option>
+    <option value="fr">French</option>
+    <option value="de">German</option>
+    <option value="it">Italian</option>
+    <option value="ja">Japanese</option>
+    <option value="ru">Russian</option>
+    <option value="es">Spanish</option>
+  </select>
+
+  <h2>Transcription:</h2>
+  <p id="transcription">...</p>
+</body>
+</html>
