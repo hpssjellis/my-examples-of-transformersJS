@@ -1,4 +1,9 @@
-importScripts('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2');
+//importScripts('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2');
+
+
+    // import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';   // use to test if latest works
+
+    import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2';
 
 let asrPipeline;
 
