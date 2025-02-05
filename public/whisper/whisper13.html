@@ -48,11 +48,17 @@ async function startRecording() {
 
   processorNode.onaudioprocess = async (event) => {
     const audioData = event.inputBuffer.getChannelData(0);
+    
+console.log("Buffer length before:", audioBuffer.length);
     audioBuffer.push(...audioData);
 
+console.log("Buffer length before:", audioBuffer.length);
     if (audioBuffer.length >= sampleRate * chunkDuration) {
       const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
       audioBuffer = audioBuffer.slice(sampleRate * chunkDuration);
+      
+console.log("Processing chunk of size:", chunk.length);
+console.log("Remaining buffer after slice:", audioBuffer.length);
 
       // Convert chunk to Float32Array
       const float32Chunk = new Float32Array(chunk);
@@ -78,49 +84,6 @@ async function startRecording() {
 
 
 
-    /*
-    // Start recording with real-time transcription
-    async function startRecording() {
-      document.getElementById('startButton').disabled = true;
-      document.getElementById('stopButton').disabled = false;
-
-      audioContext = new AudioContext({ sampleRate: sampleRate });
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const source = audioContext.createMediaStreamSource(mediaStream);
-
-      // Create a ScriptProcessorNode for real-time processing with buffer size of 16384
-      processorNode = audioContext.createScriptProcessor(16384, 1, 1);
-      source.connect(processorNode);
-      processorNode.connect(audioContext.destination);
-
-      processorNode.onaudioprocess = async (event) => {
-        const audioData = event.inputBuffer.getChannelData(0);
-        audioBuffer.push(...audioData);
-
-        if (audioBuffer.length >= sampleRate * chunkDuration) {
-          const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
-          audioBuffer = audioBuffer.slice(sampleRate * chunkDuration);
-
-          // Convert chunk to Float32Array
-          const float32Chunk = new Float32Array(chunk);
-
-          const result = await asrPipeline(float32Chunk);
-          console.log(result);
-          const myTextTrimmed = result.text.trim()   // remove spaces at the front or back
-          if (myTextTrimmed == '[BLANK_AUDIO]'  || myTextTrimmed == '[MUSIC]' || myTextTrimmed == '[BEEP]'  || myTextTrimmed == '[COUGH]'    || myTextTrimmed == '[INAUDIOBLE]'    ) {
-            // do nothing
-          } else {
-            document.getElementById('transcription').innerText += result.text;
-          }
-        }
-      };
-
-      console.log("Live transcription started...");
-
-    }
-
-
-    */
 
 
       
