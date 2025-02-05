@@ -40,8 +40,8 @@ async function startRecording() {
   mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const source = audioContext.createMediaStreamSource(mediaStream);
 
-  // Create a ScriptProcessorNode for real-time processing with buffer size of 16384
-  processorNode = audioContext.createScriptProcessor(16384, 1, 1);
+  // Create a ScriptProcessorNode for real-time processing with buffer size of 16384  or 4096
+  processorNode = audioContext.createScriptProcessor(4096, 1, 1);
   source.connect(processorNode);
   processorNode.connect(audioContext.destination);
 
