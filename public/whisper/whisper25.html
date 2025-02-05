@@ -20,11 +20,11 @@
     const myChunkDuration = 2; // seconds
 
     async function loadModel() {
+      await loadAndAddAudioWorkletModuleFromFile(); // Load the script first
       myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny");
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
       console.log("Model loaded.");
-      startRecording();
     }
 
     async function startRecording() {
