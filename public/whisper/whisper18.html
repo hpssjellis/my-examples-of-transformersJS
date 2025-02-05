@@ -15,8 +15,8 @@
     let myAudioContext;
     let myWorkletNode;
     let myAudioBuffer = [];
-    const mySampleRate = 32000;
-    const myChunkDuration = 3; // seconds
+    const mySampleRate = 8000;
+    const myChunkDuration = 1; // seconds
 
     async function loadModel() {
       myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny");     //Xenova/whisper-base is accurate but slow. Try:
