@@ -19,7 +19,7 @@
     const myChunkDuration = 3; // seconds
 
     async function loadModel() {
-      myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny");     //Xenova/whisper-base is accurate but slow. Try:
+      myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-small");     //Xenova/whisper-base is accurate but slow. Try:
                                                                                          //Xenova/whisper-tiny (Fastest, but lower accuracy)
                                                                                          //Xenova/whisper-small (Good speed/accuracy balance)
       document.getElementById('loadModelButton').disabled = true;
