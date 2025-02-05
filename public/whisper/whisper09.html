@@ -19,7 +19,7 @@
     let processorNode;
     let audioBuffer = [];
     const sampleRate = 16000;
-    const chunkDuration = 3; // seconds
+    const chunkDuration = 1; // seconds
 
     // Load Whisper model
     async function loadModel() {
@@ -57,7 +57,9 @@
 
           const result = await asrPipeline(float32Chunk);
           console.log(result);
-          if (result.text !== '[BLANK_AUDIO]' || result.text !== ' [BLANK_AUDIO]') {
+          if (result.text == '[BLANK_AUDIO]' || result.text !== ' [BLANK_AUDIO]' || result.text !== '[MUSIC]' || result.text !== '[BEEP]'  || result.text !== '[COUGH]'  ) {
+            // do nothing
+          } else {
             document.getElementById('transcription').innerText += result.text;
           }
         }
