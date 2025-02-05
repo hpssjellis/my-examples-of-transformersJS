@@ -59,6 +59,7 @@
           console.log(myText)
           if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
             document.getElementById('transcription').innerText +=  myResult.text;
+            if (myResult.text.includes('[BLANK_AUDIO]')){document.getElementById('transcription').innerText +=  myResult.text; += '\n'}
           }
         }
       };
