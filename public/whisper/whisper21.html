@@ -58,7 +58,7 @@
           let myText = myResult.text.trim();  // just to check for special codes.
           console.log(myText)
           if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
-            document.getElementById('transcription').innerText +=  myResult.text;
+            document.getElementById('transcription').innerText +=  myResult.text + '\r\n';
             if (myResult.text.includes('[BLANK_AUDIO]')){
               console.log('linefeed')
               document.getElementById('transcription').innerText += '\r\n'
