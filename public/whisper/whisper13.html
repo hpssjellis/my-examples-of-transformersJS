@@ -52,8 +52,9 @@ async function startRecording() {
 //console.log("Buffer length before:", audioBuffer.length);
     audioBuffer.push(...audioData);
 
-console.log("Buffer length before:", audioBuffer.length);
     if (audioBuffer.length >= sampleRate * chunkDuration) {
+      
+console.log("Buffer length before:", audioBuffer.length);
       const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
       audioBuffer = audioBuffer.slice(sampleRate * chunkDuration);
       
