@@ -24,7 +24,7 @@
     // Load Whisper model
     async function loadModel() {
       let myLanguage = document.getElementById('myLanguageSelect').value;
-      asrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base", { language: myLanguage });
+      asrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base");
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
       console.log("Model loaded.");
@@ -56,7 +56,7 @@ async function startRecording() {
       // Convert chunk to Float32Array
       const float32Chunk = new Float32Array(chunk);
 
-      const result = await asrPipeline(float32Chunk);
+      const result = await asrPipeline(float32Chunk, { language: myLanguage });
       console.log(result);
       const myTextTrimmed = result.text.trim(); // remove spaces at the front or back
       if (myTextTrimmed == '[BLANK_AUDIO]' || myTextTrimmed == '[MUSIC]' || myTextTrimmed == '[BEEP]' || myTextTrimmed == '[COUGH]' || myTextTrimmed == '[INAUDIOBLE]') {
