@@ -41,8 +41,8 @@ async function startRecording() {
   mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const source = audioContext.createMediaStreamSource(mediaStream);
 
-  // Create a ScriptProcessorNode for real-time processing with buffer size of 16384  or 4096
-  processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+  // Create a ScriptProcessorNode for real-time processing with buffer size of 16384 or 8192  or 4096
+  processorNode = audioContext.createScriptProcessor(8192, 1, 1);
   source.connect(processorNode);
   processorNode.connect(audioContext.destination);
 
@@ -56,17 +56,17 @@ async function startRecording() {
       
       console.log("Buffer length before:", audioBuffer.length);
       const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
-      let audioRemainder = audioBuffer.slice(sampleRate * chunkDuration);
+      audioBuffer = audioBuffer.slice(sampleRate * chunkDuration);
       
-console.log("Processing chunk of size:", chunk.length);
-console.log("Remaining buffer after slice:",  audioRemainder.length);
+      console.log("Processing chunk of size:", chunk.length);
+      console.log("Remaining buffer after slice:",  audioBuffer.length);
 
             // Zero out the circular buffer after processing
-      audioBuffer.fill(0);
+     // audioBuffer.fill(0);
       
-      console.log("Buffer after zero:",  audioBuffer.length);
-      audioBuffer.push(...audioRemainder);
-      console.log("Buffer after remainder",  audioBuffer.length);
+     // console.log("Buffer after zero:",  audioBuffer.length);
+    //  audioBuffer.push(...audioRemainder);
+     // console.log("Buffer after remainder",  audioBuffer.length);
 
       // Convert chunk to Float32Array
       const float32Chunk = new Float32Array(chunk);
