@@ -15,7 +15,7 @@
     let myAudioContext;
     let myWorkletNode;
     let myAudioBuffer = [];
-    const mySampleRate = 16000;
+    const mySampleRate = 32000;
     const myChunkDuration = 3; // seconds
 
     async function loadModel() {
@@ -29,6 +29,7 @@
     }
 
     async function startRecording() {
+      document.getElementById('transcription').innerText = "";
       document.getElementById('startButton').disabled = true;
       document.getElementById('stopButton').disabled = false;
       const myLanguage = document.getElementById('myLanguageSelect').value;
