@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisper-base Live Transcription</title>
+  <script type="module">
+    import { pipeline, read_audio } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2';
+
+    window.myLoadModel = myLoadModel;
+    window.myStartRecording = myStartRecording;
+    window.myStopRecording = myStopRecording;
+
+    let myAsrPipeline;
+    let myAudioContext;
+    let myMediaStream;
+    let myProcessorNode;
+    let myBufferSize = 8192;
+    let myCircularBuffer = new Float32Array(16000 * 2); // 2-second buffer
+    let myWriteIndex = 0;
+    let myReadIndex = 0;
+    let myProcessing = false;
+    const mySampleRate = 16000;
+    const myChunkDuration = 1; // seconds
+
+    async function myLoadModel() {
+      let myLanguage = document.getElementById('myLanguageSelect').value;
+      myAsrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base", { language: myLanguage });
+      document.getElementById('myLoadModelButton').disabled = true;
+      document.getElementById('myStartButton').disabled = false;
+      console.log("Model loaded.");
+    }
+
+    async function myStartRecording() {
+      document.getElementById('myStartButton').disabled = true;
+      document.getElementById('myStopButton').disabled = false;
+
+      myAudioContext = new AudioContext({ sampleRate: mySampleRate });
+      myMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mySource = myAudioContext.createMediaStreamSource(myMediaStream);
+      myProcessorNode = myAudioContext.createScriptProcessor(myBufferSize, 1, 1);
+      mySource.connect(myProcessorNode);
+      myProcessorNode.connect(myAudioContext.destination);
+
+      myProcessorNode.onaudioprocess = (event) => {
+        let myAudioData = event.inputBuffer.getChannelData(0);
+        for (let i = 0; i < myAudioData.length; i++) {
+          myCircularBuffer[myWriteIndex] = myAudioData[i];
+          myWriteIndex = (myWriteIndex + 1) % myCircularBuffer.length;
+        }
+        if (!myProcessing) {
+          myProcessing = true;
+          myProcessAudio();
+        }
+      };
+      console.log("Live transcription started...");
+    }
+
+    async function myProcessAudio() {
+      while (myReadIndex !== myWriteIndex) {
+        let myChunk = new Float32Array(mySampleRate * myChunkDuration);
+        for (let i = 0; i < myChunk.length; i++) {
+          myChunk[i] = myCircularBuffer[myReadIndex];
+          myReadIndex = (myReadIndex + 1) % myCircularBuffer.length;
+        }
+        let myResult = await myAsrPipeline(myChunk);
+        if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myResult.text)) {
+          document.getElementById('myTranscription').innerText += myResult.text;
+        }
+      }
+      myProcessing = false;
+    }
+
+    function myStopRecording() {
+      document.getElementById('myStartButton').disabled = false;
+      document.getElementById('myStopButton').disabled = true;
+      myProcessorNode.disconnect();
+      myMediaStream.getTracks().forEach(track => track.stop());
+      myAudioContext.close();
+      console.log("Recording stopped.");
+    }
+  </script>
+</head>
+<body>
+  <h1>Live Whisper-base Transcription</h1>
+  <input type="button" id="myLoadModelButton" value="Load Model" onclick="myLoadModel()">
+  <input type="button" id="myStartButton" value="Start Live Transcription" onclick="myStartRecording()" disabled>
+  <input type="button" id="myStopButton" value="Stop" onclick="myStopRecording()" disabled><br>
+  
+  <select id="myLanguageSelect">
+    <option value="en" selected>English</option>
+    <option value="es">Spanish</option>
+    <option value="fr">French</option>
+  </select>
+  
+  <h2>Transcription:</h2>
+  <p id="myTranscription">...</p>
+</body>
+</html>
