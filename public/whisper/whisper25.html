@@ -19,7 +19,7 @@
     const myChunkDuration = 2; // seconds
 
     async function loadModel() {
-      await loadAndAddAudioWorkletModuleFromFile(); // Load the script first
+      await loadAndAddAudioWorkletModuleFromURL(); // Load the script first
       myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny");
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
@@ -65,22 +65,13 @@
       console.log("Recording stopped.");
     }
 
-    async function loadAndAddAudioWorkletModuleFromFile() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'application/javascript';
-      input.onchange = async (event) => {
-        const file = event.target.files[0];
-        const arrayBuffer = await file.arrayBuffer();
-        const blob = new Blob([arrayBuffer], { type: 'application/javascript' });
-
-        await myAudioContext.audioWorklet.addModule(URL.createObjectURL(blob));
-        console.log("AudioWorklet script added successfully.");
-      };
-      input.click();
+    async function loadAndAddAudioWorkletModuleFromURL() {
+      const scriptURL = 'https://your-audioworklet-script-url.js'; // Replace with the actual URL of your AudioWorklet script
+      await myAudioContext.audioWorklet.addModule(scriptURL);
+      console.log("AudioWorklet script added successfully.");
     }
 
-    window.loadAndAddAudioWorkletModuleFromFile = loadAndAddAudioWorkletModuleFromFile;
+    window.loadAndAddAudioWorkletModuleFromURL = loadAndAddAudioWorkletModuleFromURL;
   </script>
 </head>
 <body>
