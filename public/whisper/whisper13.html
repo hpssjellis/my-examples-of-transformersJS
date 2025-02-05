@@ -23,7 +23,7 @@
 
     // Load Whisper model
     async function loadModel() {
-      asrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base.en");
+      asrPipeline = await pipeline("automatic-speech-recognition", "Xenova/whisper-base");
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
       console.log("Model loaded.");
