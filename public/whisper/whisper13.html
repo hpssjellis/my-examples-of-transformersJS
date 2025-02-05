@@ -54,16 +54,19 @@ async function startRecording() {
 
     if (audioBuffer.length >= sampleRate * chunkDuration) {
       
-console.log("Buffer length before:", audioBuffer.length);
+      console.log("Buffer length before:", audioBuffer.length);
       const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
       let audioRemainder = audioBuffer.slice(sampleRate * chunkDuration);
       
 console.log("Processing chunk of size:", chunk.length);
-console.log("Remaining buffer after slice:", audioBuffer.length);
+console.log("Remaining buffer after slice:",  audioRemainder.length);
 
             // Zero out the circular buffer after processing
       audioBuffer.fill(0);
-    audioBuffer.push(audioRemainder);
+      
+      console.log("Buffer after zero:",  audioBuffer.length);
+      audioBuffer.push(audioRemainder);
+      console.log("Buffer after remainder",  audioBuffer.length);
 
       // Convert chunk to Float32Array
       const float32Chunk = new Float32Array(chunk);
