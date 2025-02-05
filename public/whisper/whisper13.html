@@ -56,10 +56,14 @@ async function startRecording() {
       
 console.log("Buffer length before:", audioBuffer.length);
       const chunk = audioBuffer.slice(0, sampleRate * chunkDuration);
-      audioBuffer = audioBuffer.slice(sampleRate * chunkDuration);
+      let audioRemainder = audioBuffer.slice(sampleRate * chunkDuration);
       
 console.log("Processing chunk of size:", chunk.length);
 console.log("Remaining buffer after slice:", audioBuffer.length);
+
+            // Zero out the circular buffer after processing
+      audioBuffer.fill(0);
+    audioBuffer.push(audioRemainder);
 
       // Convert chunk to Float32Array
       const float32Chunk = new Float32Array(chunk);
@@ -73,8 +77,7 @@ console.log("Remaining buffer after slice:", audioBuffer.length);
         document.getElementById('transcription').innerText += result.text;
       }
 
-      // Zero out the circular buffer after processing
-      //audioBuffer.fill(0);
+
     }
   };
 
