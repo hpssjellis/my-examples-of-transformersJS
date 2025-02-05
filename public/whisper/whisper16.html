@@ -31,6 +31,52 @@
       startRecording()   
     }
 
+
+// Main script
+
+const startButton = document.getElementById('startButton');
+const stopButton = document.getElementById('stopButton');
+let worker;
+
+function startRecording() {
+  startButton.disabled = true;
+  stopButton.disabled = false;
+
+  worker = new Worker('work01.js');
+  const sampleRate = 44100; // Or any desired sample rate
+  const chunkDuration = 2; // Duration of each chunk in seconds
+
+  worker.postMessage({ type: 'startRecording', sampleRate, chunkDuration });
+
+  worker.onmessage = async function(event) {
+    if (event.data.type === 'audioChunk') {
+      const float32Chunk = event.data.chunk;
+
+      const result = await asrPipeline(float32Chunk);
+      console.log(result);
+      const myTextTrimmed = result.text.trim();
+      if (myTextTrimmed !== '[BLANK_AUDIO]' && myTextTrimmed !== '[MUSIC]' && myTextTrimmed !== '[BEEP]' && myTextTrimmed !== '[COUGH]' && myTextTrimmed !== '[INAUDIOBLE]') {
+        document.getElementById('transcription').innerText += result.text;
+      }
+    } else if (event.data.type === 'error') {
+      console.error('Worker error:', event.data.message);
+    }
+  };
+}
+
+
+
+
+
+
+
+
+
+    
+
+
+/*
+   
     // Start recording with real-time transcription
     async function startRecording() {
       document.getElementById('startButton').disabled = true;
@@ -70,6 +116,10 @@
       console.log("Live transcription started...");
 
     }
+
+
+
+    */
 
     // Stop recording
     function stopRecording() {
