@@ -16,7 +16,7 @@
     let myWorkletNode;
     let myAudioBuffer = [];
     const mySampleRate = 16000;
-    const myChunkDuration = 3; // seconds
+    const myChunkDuration = 1; // seconds
 
     async function loadModel() {
       myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-small");     //Xenova/whisper-base is accurate but slow. Try:
@@ -54,8 +54,7 @@
           let myChunk = myAudioBuffer.slice(0, mySampleRate * myChunkDuration);
           myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);          
           
-         // let myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
-          let myResult = await myASR(new int16Array(myChunk), { language: myLanguage });
+          let myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
           let myText = myResult.text  // just to check for special codes.
           console.log(myText)
           if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
