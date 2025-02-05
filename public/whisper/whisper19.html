@@ -54,7 +54,8 @@
           let myChunk = myAudioBuffer.slice(0, mySampleRate * myChunkDuration);
           myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);          
           
-          let myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
+         // let myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
+          let myResult = await myASR(new int16Array(myChunk), { language: myLanguage });
           let myText = myResult.text  // just to check for special codes.
           console.log(myText)
           if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
