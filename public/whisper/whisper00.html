@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Whisper-base Live Transcription</title>
+  <title>Whisper-base Live Local Transcription</title>
   <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2';
 
@@ -19,7 +19,7 @@
     const myChunkDuration = 2; // seconds
 
     async function loadModel() {
-      myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny");     //Xenova/whisper-base is accurate but slow. Try:
+      myASR = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny.en");     //Xenova/whisper-base is accurate but slow. Try: .en for english
                                                                                          //Xenova/whisper-tiny (Fastest, but lower accuracy)
                                                                                          //Xenova/whisper-small (Good speed/accuracy balance)
       document.getElementById('loadModelButton').disabled = true;
@@ -32,7 +32,7 @@
       document.getElementById('transcription').innerText = "";
       document.getElementById('startButton').disabled = true;
       document.getElementById('stopButton').disabled = false;
-      const myLanguage = document.getElementById('myLanguageSelect').value;
+   //   const myLanguage = document.getElementById('myLanguageSelect').value;
       myAudioContext = new AudioContext({ sampleRate: mySampleRate });
 
       await myAudioContext.audioWorklet.addModule(URL.createObjectURL(new Blob([`
@@ -54,31 +54,21 @@
           let myChunk = myAudioBuffer.slice(0, mySampleRate * myChunkDuration);
           myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);          
           
-          const myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
+        //  const myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
+          const myResult = await myASR(new Float32Array(myChunk));
           let myText = myResult.text.trim();  // just to check for special codes.
          // console.log(myText)
           //var regExp = /\(([^)]+)\)/;
           const regExp= /[\(\{[][^()\{}]*[\)\}\]]/g
-          if (regExp.exec(myText)){   // check for brackets
+          if (regExp.exec(myText)){   // check for anything in brackets and only show in the console
             console.log(myText)
             if (myText == '[BLANK_AUDIO]' ){
               console.log('linefeed')
               document.getElementById('transcription').innerText += '\r\n'
             }
-          } else {    // all good then print the output to the webpage
+          } else {    // all good if no brackets then print the output to the webpage
               document.getElementById('transcription').innerText +=  myResult.text;
           }
-
-          /*
-          if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
-            document.getElementById('transcription').innerText +=  myResult.text;
-            if (myText == '[BLANK_AUDIO]' ){
-              console.log('linefeed')
-              document.getElementById('transcription').innerText += '\r\n'
-            }
-          }
-          */
-
           
         }
       };
@@ -100,11 +90,16 @@
   </script>
 </head>
 <body>
-  <h1>Live Whisper-base Transcription</h1>
+  <h1>Live Whisper-tiny.en Local Transcription</h1>
+  Note1: Unlike my other code, this one is having CORS issues when loading from a local computer, works fine online and then works completely client-side, just does not load clientside. 
+  Working on it <br>
+  Note2: Based on the <a href="https://huggingface.co/Xenova/whisper-tiny">whisper-tiny</a>, <a href="https://huggingface.co/Xenova/whisper-small">whisper-small</a> and 
+  <a href="https://huggingface.co/Xenova/whisper-base">whisper-base</a> whisper models by Xenova on HuggingFace. Add ".en" for an English specific model<br><br>
   <input type="button" id="loadModelButton" value="Load Model" onclick="loadModel()">
   <input type="button" id="startButton" value="Start Live Transcription" onclick="startRecording()" disabled>
   <input type="button" id="stopButton" value="Stop" onclick="stopRecording()" disabled><br>
-  
+
+  <!--
   <select id="myLanguageSelect">
     <option value="ar">Arabic</option>
     <option value="zh">Chinese</option>
@@ -116,12 +111,13 @@
     <option value="ru">Russian</option>
     <option value="es">Spanish</option>
   </select>
-
+ -->
   <h2>Transcription:</h2>
-  <p id="transcription">...</p>
+  <div id="transcription">...</div>
 
 
-Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
+<br><br><br><br>
+<hr>Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
 Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
 My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a><br>
 My Github <a href="https://github.com/hpssjellis">Profile</a><br>
