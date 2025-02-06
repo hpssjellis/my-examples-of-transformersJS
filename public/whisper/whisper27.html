@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Whisper-base Live Transcription</title>
+  <title>Whisper-base Live Local Transcription</title>
   <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.2';
 
@@ -89,7 +89,10 @@
   </script>
 </head>
 <body>
-  <h1>Live Whisper-base Transcription</h1>
+  <h1>Live Whisper-tiny Local Transcription</h1>
+  Note1: Unlike my other code, this one is having CORS issues when loading from a local computer, works fine online and then works completely client-side, just does not load clientside. 
+  Working on it <br>
+  Note2: Based on the <a href="https://huggingface.co/Xenova/whisper-tiny">whisper-tiny</a>, <a href="https://huggingface.co/Xenova/whisper-small">whisper-small</a> and <a href="https://huggingface.co/Xenova/whisper-base">whisper-base</a> whisper models by Xenova on HuggingFace<br><br>
   <input type="button" id="loadModelButton" value="Load Model" onclick="loadModel()">
   <input type="button" id="startButton" value="Start Live Transcription" onclick="startRecording()" disabled>
   <input type="button" id="stopButton" value="Stop" onclick="stopRecording()" disabled><br>
