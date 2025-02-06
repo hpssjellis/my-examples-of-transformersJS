@@ -60,10 +60,6 @@
           var regExp = /\(([^)]+)\)/;
           if (regExp.exec(myText)){   // check for brackets
             console.log(myText)
-            if (myText == '[BLANK_AUDIO]'){  // if brakets then check for specifics.
-              console.log('linefeed')
-              document.getElementById('transcription').innerText += '\r\n'  
-            }
           } else {    // all good then print the output to the webpage
               document.getElementById('transcription').innerText +=  myResult.text;
           }
