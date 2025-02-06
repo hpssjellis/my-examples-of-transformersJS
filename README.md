@@ -12,3 +12,10 @@ Read the blueprint at [blueprint.md](blueprint.md)
 see the index file at
 
 https://hpssjellis.github.io/my-examples-of-transformersJS/public/index.html
+
+
+The main TransformersJS webGPU github is at https://github.com/huggingface/transformers.js
+
+With transformersjs-examples at
+
+https://github.com/huggingface/transformers.js-examples
