@@ -19,3 +19,8 @@ The main TransformersJS webGPU github is at https://github.com/huggingface/trans
 With transformersjs-examples at
 
 https://github.com/huggingface/transformers.js-examples
+
+
+
+
+NOTE: HERE IS THE API    https://huggingface.co/docs/transformers.js/api/pipelines
