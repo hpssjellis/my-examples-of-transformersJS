@@ -32,7 +32,7 @@
       document.getElementById('transcription').innerText = "";
       document.getElementById('startButton').disabled = true;
       document.getElementById('stopButton').disabled = false;
-      const myLanguage = document.getElementById('myLanguageSelect').value;
+   //   const myLanguage = document.getElementById('myLanguageSelect').value;
       myAudioContext = new AudioContext({ sampleRate: mySampleRate });
 
       await myAudioContext.audioWorklet.addModule(URL.createObjectURL(new Blob([`
