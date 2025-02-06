@@ -25,7 +25,7 @@
       document.getElementById('loadModelButton').disabled = true;
       document.getElementById('startButton').disabled = false;
       console.log("Model loaded.");
-      startRecording() 
+      startRecording(); 
     }
 
     async function startRecording() {
@@ -35,17 +35,7 @@
       const myLanguage = document.getElementById('myLanguageSelect').value;
       myAudioContext = new AudioContext({ sampleRate: mySampleRate });
 
-      await myAudioContext.audioWorklet.addModule(URL.createObjectURL(new Blob([`
-        class MyAudioProcessor extends AudioWorkletProcessor {
-          process(inputs) {
-            if (inputs[0].length > 0) {
-              this.port.postMessage(inputs[0][0]);
-            }
-            return true;
-          }
-        }
-        registerProcessor('my-audio-processor', MyAudioProcessor);
-      `], { type: "application/javascript" })));
+      await myAudioContext.audioWorklet.addModule('my-audio-processor.js');
 
       myWorkletNode = new AudioWorkletNode(myAudioContext, 'my-audio-processor');
       myWorkletNode.port.onmessage = async (event) => {
@@ -55,31 +45,16 @@
           myAudioBuffer = myAudioBuffer.slice(mySampleRate * myChunkDuration);          
           
           const myResult = await myASR(new Float32Array(myChunk), { language: myLanguage });
-          let myText = myResult.text.trim();  // just to check for special codes.
-         // console.log(myText)
-          //var regExp = /\(([^)]+)\)/;
-          const regExp= /[\(\{[][^()\{}]*[\)\}\]]/g
-          if (regExp.exec(myText)){   // check for brackets
-            console.log(myText)
-            if (myText == '[BLANK_AUDIO]' ){
-              console.log('linefeed')
-              document.getElementById('transcription').innerText += '\r\n'
-            }
-          } else {    // all good then print the output to the webpage
-              document.getElementById('transcription').innerText +=  myResult.text;
-          }
-
-          /*
-          if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
-            document.getElementById('transcription').innerText +=  myResult.text;
-            if (myText == '[BLANK_AUDIO]' ){
-              console.log('linefeed')
-              document.getElementById('transcription').innerText += '\r\n'
-            }
-          }
-          */
-
+          let myText = myResult.text.trim();
           
+          const regExp = /[\(\{[][^()\{}]*[\)\}\]]/g;
+          if (regExp.exec(myText)){
+            if (myText == '[BLANK_AUDIO]'){
+              document.getElementById('transcription').innerText += '\r\n';
+            }
+          } else {
+              document.getElementById('transcription').innerText += myResult.text;
+          }
         }
       };
 
@@ -120,12 +95,10 @@
   <h2>Transcription:</h2>
   <p id="transcription">...</p>
 
-
-Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
+Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br>
 Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
 My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a><br>
 My Github <a href="https://github.com/hpssjellis">Profile</a><br>
 
-  
 </body>
 </html>
