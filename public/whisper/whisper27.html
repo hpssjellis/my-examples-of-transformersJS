@@ -59,26 +59,15 @@
          // console.log(myText)
           //var regExp = /\(([^)]+)\)/;
           const regExp= /[\(\{[][^()\{}]*[\)\}\]]/g
-          if (regExp.exec(myText)){   // check for brackets
+          if (regExp.exec(myText)){   // check for anything in brackets and only show in the console
             console.log(myText)
             if (myText == '[BLANK_AUDIO]' ){
               console.log('linefeed')
               document.getElementById('transcription').innerText += '\r\n'
             }
-          } else {    // all good then print the output to the webpage
+          } else {    // all good if no brackets then print the output to the webpage
               document.getElementById('transcription').innerText +=  myResult.text;
           }
-
-          /*
-          if (!['[BLANK_AUDIO]', '[MUSIC]', '[BEEP]', '[COUGH]', '[INAUDIBLE]'].includes(myText)) {
-            document.getElementById('transcription').innerText +=  myResult.text;
-            if (myText == '[BLANK_AUDIO]' ){
-              console.log('linefeed')
-              document.getElementById('transcription').innerText += '\r\n'
-            }
-          }
-          */
-
           
         }
       };
@@ -118,10 +107,11 @@
   </select>
 
   <h2>Transcription:</h2>
-  <p id="transcription">...</p>
+  <div id="transcription">...</div>
 
 
-Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
+<br><br><br><br>
+<hr>Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
 Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
 My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a><br>
 My Github <a href="https://github.com/hpssjellis">Profile</a><br>
