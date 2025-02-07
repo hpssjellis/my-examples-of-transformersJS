@@ -71,8 +71,7 @@ async function myAskQuestion() {
     });
     
     if (!myStopFlag) {
-      //
-      let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
+      //  let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
      // let myReply = output[0].generated_text.replace(/<think>/g, "").replace(/</think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
       let myReply = output[0].generated_text.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
       myTextarea.value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
