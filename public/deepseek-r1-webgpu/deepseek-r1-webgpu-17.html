@@ -20,7 +20,7 @@ async function myLoadModel() {
   myModel = document.getElementById('myModelInput').value
   const progressCallback = (progress) => {
    // console.log(progress);
-    const myProg = progress.progress.toFixed(2);
+    const myProg = parseInt(progress.progress);
     document.getElementById('progress').textContent = `Loading: ${progress.file} at ${myProg}%`;   //(progress * 100).toFixed(2)
   };
   
