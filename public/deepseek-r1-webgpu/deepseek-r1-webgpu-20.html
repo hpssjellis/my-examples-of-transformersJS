@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+  
+<script type="module">
+import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
+
+// Expose functions to global scope for button calls
+window.myLoadModel = myLoadModel;
+window.myAskQuestion = myAskQuestion;
+window.myStopGeneration = myStopGeneration;
+  
+let myGenerator;
+let myStopFlag = false;
+let myStreamer = null;
+let myModel;
+let myAbortController = new AbortController(); // Ensure proper initialization
+
+async function myLoadModel() {
+  myModel = document.getElementById('myModelInput').value;
+  document.getElementById('progress').textContent = `Loading: Started...`;
+  
+  myGenerator = await pipeline("text-generation", myModel, {
+    dtype: "q4f16",
+    device: "webgpu",
+    progress_callback: (progress) => {
+      let myProg = parseInt(progress.progress);
+      document.getElementById('progress').textContent = `Loading: ${progress.file} at ${myProg}%`;
+    }
+  });
+  
+  document.getElementById('myLoadButton').disabled = true;
+  document.getElementById('myAskButton').disabled = false;
+  document.getElementById('progress').textContent = `Loading: Done!`;
+}
+
+async function myAskQuestion() {
+  let myTextarea = document.getElementById('myTextarea01');
+  myTextarea.value = '';
+  let myContent = document.getElementById('myArea01').value;
+  let myMaxT = parseInt(document.getElementById('myMaxTokens').value);
+  
+  myStopFlag = false;
+  document.getElementById('myStopButton').disabled = false;
+  window.startTime = performance.now();
+  
+  myStreamer = new TextStreamer(myGenerator.tokenizer, {
+    skip_prompt: true,
+    callback_function: (text) => {
+      if (myStopFlag) return;
+      myTextarea.value += text;
+      
+      let elapsedTime = (performance.now() - window.startTime) / 1000;
+      let generatedTokens = myTextarea.value.length;
+      let tokensPerSecond = (generatedTokens / elapsedTime).toFixed(2);
+      let progress = parseInt((generatedTokens * 100) / (myMaxT * 10));
+      
+      document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens/sec: ${tokensPerSecond}`;
+    },
+  });
+
+  try {
+    let output = await myGenerator([{ role: "user", content: myContent }], {
+      max_new_tokens: myMaxT,
+      do_sample: true,
+      top_p: 0.9,
+      temperature: 0.7,
+      streamer: myStreamer,
+      chain_of_thought: true,
+    });
+    
+    if (!myStopFlag) {
+      let myReply = output[0].generated_text.replace(/<think>/g, "").replace(/</think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
+      myTextarea.value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+function myStopGeneration() {
+  myStopFlag = true;
+  document.getElementById('progress').textContent = 'Generation stopped.';
+  document.getElementById('myStopButton').disabled = true;
+  console.log('Stopped.');
+}
+</script>
+</head>
+<body>
+<h1>DeepSeek-R1-webgpu in the browser</h1>
+
+Open the console (Shift + Ctrl + I).<br><br>
+
+<a href="onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX">Download Model</a> (~1.4GB cached).<br><br>
+
+Model: <input id="myModelInput" type="text" size="60" value="onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX"> <br><br>
+<input id="myLoadButton" type="button" value="Load Model" onclick="myLoadModel()"> Data warning ~1.4 GB<br><br>
+<div id="progress">Loading progress: 0%</div>  
+<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
+Max tokens: <input id="myMaxTokens" type="number" style="width:60px" value="512">
+<input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()" disabled>
+<input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()">
+<br><br>
+<textarea id="myTextarea01" rows="20" cols="95%" placeholder="Reply Goes here" readonly></textarea><br><br>
+<input type="button" value="Copy" onclick="{ let myTextarea = document.getElementById('myTextarea01'); myTextarea.select(); document.execCommand('copy'); }"><br>
+Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br>
+GitHub: <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">Project Index</a><br>
+TransformersJS Repo: <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">GitHub</a><br>
+</body>
+</html>
