@@ -133,7 +133,7 @@ function stopGeneration() {
   document.getElementById('progress').textContent = 'Generation stopped.';
   document.getElementById('myStopButton').disabled = true; // Disable stop button
   if (streamer) {
-    streamer.abort(); // Force stop text generation
+  //  streamer.abort(); // Force stop text generation
     streamer = null; // Clear streamer reference
   }
   console.log('Stopped.');
