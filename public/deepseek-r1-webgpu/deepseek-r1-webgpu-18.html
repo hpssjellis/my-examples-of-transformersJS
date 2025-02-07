@@ -25,7 +25,8 @@ function stopGeneration() {
     streamer.abort();  // Stop the text generation
     document.getElementById('progress').textContent = 'Generation stopped.';
     document.getElementById('myStopButton').disabled = true;
-  
+  }
+} 
 
 // Create a text generation pipeline
 async function myLoadModel() {
