@@ -16,11 +16,12 @@ let generator
 let myModel
 let abortController; // Add this global variable
 
+abortController = new AbortController(); // Create the controller
 
 let myContent = document.getElementById('myArea01').value 
-c
-  abortController = new AbortController(); // Create the controller
-onsole.log(myContent)
+console.log(myContent)
+  
+
 
 function stopGeneration() {
   if (abortController) {
