@@ -26,6 +26,7 @@ async function myLoadModel() {
   generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu", progress_callback: progressCallback });
   document.getElementById('myLoadButton').disabled = true
   document.getElementById('myAskButton').disabled = false
+  document.getElementById('progress').textContent = `Loading: Done!`; 
 }
 
 async function myAskQuestion() {
@@ -39,8 +40,8 @@ async function myAskQuestion() {
     skip_prompt: true,
     callback_function: (text) => { 
       document.getElementById('myTextarea01').value += text 
-      const progress = document.getElementById('myTextarea01').value.length / myMaxT;
-      document.getElementById('progress').textContent = `Answer progress:${text.progress}%`;// ${(text.progress).toFixed(2)}%`;
+      const progress = document.getElementById('myTextarea01').value.length / myMaxT*100;
+      document.getElementById('progress').textContent = `Answer progress:${progress}%`;// ${(text.progress).toFixed(2)}%`;
      
     }, // Optional callback function   
   })
