@@ -41,7 +41,7 @@ async function myAskQuestion() {
     callback_function: (text) => { 
       document.getElementById('myTextarea01').value += text 
       const progress = document.getElementById('myTextarea01').value.length *100/ (myMaxT*4);   // randomly said it is 4 times the max token
-      document.getElementById('progress').textContent = `Answer progress: ~$(progress).toFixed(2)}%`;// ${(text.progress).toFixed(2)}%`;
+      document.getElementById('progress').textContent = `Answer progress: ~$progress.toFixed(2)}%`;// ${(text.progress).toFixed(2)}%`;
      
     }, // Optional callback function   
   })
