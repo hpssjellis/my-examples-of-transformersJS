@@ -37,6 +37,33 @@ async function myAskQuestion() {
   // Define the list of messages
   const messages = [{ role: "user", content: myContent }];
   console.log(myContent)
+const streamer = new TextStreamer(generator.tokenizer, {
+  skip_prompt: true,
+  callback_function: (text) => {
+    if (!window.startTime) {
+      window.startTime = performance.now();
+    }
+    const currentTime = performance.now();
+    const elapsedTime = (currentTime - window.startTime) / 1000; // elapsed time in seconds
+    
+    document.getElementById('myTextarea01').value += text;
+    
+    const generatedTokens = document.getElementById('myTextarea01').value.length;
+    const tokensPerSecond = generatedTokens / elapsedTime; // calculate tokens per second
+
+    const progress = parseInt((generatedTokens * 100) / (myMaxT * 10));
+    document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens per second: ${tokensPerSecond.toFixed(2)}`;
+
+    // Optional: Reset startTime when completed
+    if (progress >= 100) {
+      window.startTime = null;
+    }
+  },
+});
+
+
+/*
+  
   const streamer = new TextStreamer(generator.tokenizer, {
     skip_prompt: true,
     callback_function: (text) => { 
@@ -46,6 +73,10 @@ async function myAskQuestion() {
      
     }, // Optional callback function   
   })
+
+
+*/
+
   
   // Generate a response with additional parameters
   const myMaxT = document.getElementById('myMaxTokens').value
