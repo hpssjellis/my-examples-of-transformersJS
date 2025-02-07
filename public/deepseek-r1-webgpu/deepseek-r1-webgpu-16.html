@@ -40,14 +40,15 @@ async function myAskQuestion() {
     callback_function: (text) => { document.getElementById('myTextarea01').value += text }, // Optional callback function   
   })
   
-  // Generate a response with top_p and temperature
+  // Generate a response with additional parameters
   const myMaxT = document.getElementById('myMaxTokens').value
   const output = await generator(messages, {
     max_new_tokens: myMaxT,
     do_sample: true, // Enable sampling
     top_p: 0.9, // Set top_p value
     temperature: 0.7, // Set temperature value
-    streamer,
+    streamer, // Stream the generated text
+    chain_of_thought: true, // Enable chain of thought reasoning (if supported)
   });
   let fullReply = output[0].generated_text.at(-1).content
   console.log(fullReply);
