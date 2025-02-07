@@ -19,8 +19,8 @@ console.log(myContent)
 async function myLoadModel() {
   myModel = document.getElementById('myModelInput').value
   const progressCallback = (progress) => {
-    console.log(`Progress: ${progress}`);
-    document.getElementById('progress').textContent = `Loading: ${progress * 100}%`;
+    console.log(progress);
+    document.getElementById('progress').textContent = `Loading: ${progress.value * 100}%`;
   };
   
   generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu", progress_callback: progressCallback });
