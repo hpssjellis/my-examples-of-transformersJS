@@ -9,11 +9,23 @@ import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingfac
 // Needed for buttons to call module functions
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
+window.stopGeneration = stopGeneration
+  
 let generator
+let streamer
 let myModel
 
 let myContent = document.getElementById('myArea01').value 
 console.log(myContent)
+
+
+
+function stopGeneration() {
+  if (streamer) {
+    streamer.abort();  // Stop the text generation
+    document.getElementById('progress').textContent = 'Generation stopped.';
+    document.getElementById('myStopButton').disabled = true;
+  
 
 // Create a text generation pipeline
 async function myLoadModel() {
@@ -37,7 +49,8 @@ async function myAskQuestion() {
   // Define the list of messages
   const messages = [{ role: "user", content: myContent }];
   console.log(myContent)
-const streamer = new TextStreamer(generator.tokenizer, {
+// const streamer = new TextStreamer(generator.tokenizer, {
+  streamer = new TextStreamer(generator.tokenizer, {
   skip_prompt: true,
   callback_function: (text) => {
     if (!window.startTime) {
@@ -112,7 +125,9 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 <div id="progress">Loading progress: 0%</div>  
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
 Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512">
-<input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled><br><br>
+<input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
+<input id="myStopButton" type="button" value="Stop Question" onclick="stopGeneration()" >
+<br><br>
 
 <textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
 <input type=button value="copy" onclick="{  
