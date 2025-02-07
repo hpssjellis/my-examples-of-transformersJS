@@ -20,7 +20,8 @@ async function myLoadModel() {
   myModel = document.getElementById('myModelInput').value
   const progressCallback = (progress) => {
    // console.log(progress);
-    document.getElementById('progress').textContent = `Loading: ${progress.file} at ${progress.progress}%`;   //(progress * 100).toFixed(2)
+    const myProg = progress.progress.toFixed(2);
+    document.getElementById('progress').textContent = `Loading: ${progress.file} at ${myProg}%`;   //(progress * 100).toFixed(2)
   };
   
   generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu", progress_callback: progressCallback });
@@ -40,8 +41,8 @@ async function myAskQuestion() {
     skip_prompt: true,
     callback_function: (text) => { 
       document.getElementById('myTextarea01').value += text 
-      const progress = document.getElementById('myTextarea01').value.length *100/ (myMaxT*4);   // randomly said it is 4 times the max token
-      document.getElementById('progress').textContent = `Answer progress: ~$progress.toFixed(2)}%`;// ${(text.progress).toFixed(2)}%`;
+      const progress = parstInt(document.getElementById('myTextarea01').value.length *100/ (myMaxT*10));   // randomly said it is 10 times the max token
+      document.getElementById('progress').textContent = `Answer progress: ~${progress}%`;// ${(text.progress).toFixed(2)}%`;
      
     }, // Optional callback function   
   })
