@@ -20,7 +20,7 @@ async function myLoadModel() {
   myModel = document.getElementById('myModelInput').value
   const progressCallback = (progress) => {
    // console.log(progress);
-    document.getElementById('progress').textContent = `Loading: ${progress.file} at ${progress.progress.toFixed(2)}%`;
+    document.getElementById('progress').textContent = `Loading: ${progress.file} at ${progress.progress}%`;   //(progress * 100).toFixed(2)
   };
   
   generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu", progress_callback: progressCallback });
@@ -37,7 +37,12 @@ async function myAskQuestion() {
   console.log(myContent)
   const streamer = new TextStreamer(generator.tokenizer, {
     skip_prompt: true,
-    callback_function: (text) => { document.getElementById('myTextarea01').value += text }, // Optional callback function   
+    callback_function: (text) => { 
+      document.getElementById('myTextarea01').value += text 
+      const progress = document.getElementById('myTextarea01').value.length / myMaxT;
+      document.getElementById('answerProgress').textContent = `Answer progress: ${(text.progress * 100).toFixed(2)}%`;
+     
+    }, // Optional callback function   
   })
   
   // Generate a response with additional parameters
