@@ -99,9 +99,9 @@ async function myAskQuestion() {
   const myMaxT = document.getElementById('myMaxTokens').value
   const output = await generator(messages, {
     max_new_tokens: myMaxT,
-    do_sample: true, // Enable sampling
-    top_p: 0.9, // Set top_p value
-    temperature: 0.7, // Set temperature value
+    do_sample: true, // Enable sampling  false may have more repetition
+    top_p: 0.9, // Set top_p value // probablily percent ie 0.9 = only show next token with a 90% chance
+    temperature: 0.7, // Set temperature value, higher more random lower more focused
     streamer, // Stream the generated text
     chain_of_thought: true, // Enable chain of thought reasoning (if supported)
   });
