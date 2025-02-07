@@ -24,6 +24,7 @@ function stopGeneration() {
   console.log('Trying to stop it')
   if (streamer) {
   //  streamer.abort();  // Stop the text generation
+    streamer = null;  // Clear the streamer
     document.getElementById('progress').textContent = 'Generation stopped.';
     document.getElementById('myStopButton').disabled = true;
     console.log('Stopped?')
