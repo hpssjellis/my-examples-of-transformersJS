@@ -12,7 +12,8 @@ window.myAskQuestion = myAskQuestion
 window.stopGeneration = stopGeneration
   
 let generator
-let streamer
+let myStopFlag = false; // Global stop flag
+let streamer = null; // Keep track of streamer instance
 let myModel
 let abortController; // Add this global variable
 
@@ -22,7 +23,7 @@ let myContent = document.getElementById('myArea01').value
 console.log(myContent)
   
 
-
+/*
 function stopGeneration() {
   if (abortController) {
     abortController.abort(); // Stop generation
@@ -32,6 +33,8 @@ function stopGeneration() {
     console.log('Stopped');
   }
 }
+
+  */
 
 /*
 function stopGeneration() {
@@ -64,12 +67,71 @@ async function myLoadModel() {
 
 
 
+async function myAskQuestion() {
+  document.getElementById('myTextarea01').value = ''; 
+  myContent = document.getElementById('myArea01').value; 
+  const messages = [{ role: "user", content: myContent }];
+
+  myStopFlag = false; // Reset stop flag before starting
+  document.getElementById('myStopButton').disabled = false; // Enable stop button
+
+  // Clear any existing streamer instance before starting a new one
+  streamer = new TextStreamer(generator.tokenizer, {
+    skip_prompt: true,
+    callback_function: (text) => {
+      if (myStopFlag) return; // Stop updating if stop flag is set
+
+      if (!window.startTime) {
+        window.startTime = performance.now();
+      }
+      const currentTime = performance.now();
+      const elapsedTime = (currentTime - window.startTime) / 1000; 
+
+      document.getElementById('myTextarea01').value += text;
+      const generatedTokens = document.getElementById('myTextarea01').value.length;
+      const tokensPerSecond = generatedTokens / elapsedTime;
+      const progress = parseInt((generatedTokens * 100) / (myMaxT * 10));
+      document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens per second: ${tokensPerSecond.toFixed(2)}`;
+
+      if (progress >= 100) {
+        window.startTime = null;
+      }
+    },
+  });
+
+  const myMaxT = document.getElementById('myMaxTokens').value;
+  try {
+    const output = await generator(messages, {
+      max_new_tokens: myMaxT,
+      do_sample: true,
+      top_p: 0.9,
+      temperature: 0.7,
+      streamer,
+      chain_of_thought: true,
+    });
+
+    if (!myStopFlag) {
+      let fullReply = output[0].generated_text.at(-1).content;
+      let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
+      document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+function stopGeneration() {
+  myStopFlag = true; // Set stop flag
+  document.getElementById('progress').textContent = 'Generation stopped.';
+  document.getElementById('myStopButton').disabled = true; // Disable stop button
+  console.log('Stopped.');
+}
 
 
 
 
 
-
+/*
 
 async function myAskQuestion() {
   document.getElementById('myTextarea01').value = ''; 
@@ -124,7 +186,7 @@ async function myAskQuestion() {
 }
 
 
-
+*/
 
 /*
   
