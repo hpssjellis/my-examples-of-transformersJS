@@ -173,10 +173,11 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 
 <textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
 <input type=button value="copy" onclick="{  
-  let myTextarea = document.getElementById('myTextarea01');
-  myTextarea.select(); 
-  document.execCommand('copy'); // Copy to clipboard
-  document.getElementById('myKeeparea01') += document.getElementById('myTextarea01').value
+//  let myTextarea = document.getElementById('myTextarea01');
+ // myTextarea.select(); 
+  document.getElementById('myTextarea01')..select()
+  document.execCommand('copy') // Copy to clipboard
+  document.getElementById('myKeeparea01').value += document.getElementById('myTextarea01').value
 }"><br>
 <textarea id="myKeeparea01"  rows="5" cols="95%" placeholder="Copy here only when wished" READONLY></textarea><br><br><br>  
 Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
