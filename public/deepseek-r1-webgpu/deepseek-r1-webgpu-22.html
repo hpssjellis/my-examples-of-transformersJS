@@ -9,7 +9,6 @@ import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingfac
 // Needed for buttons to call module functions
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
-window.stopGeneration = stopGeneration
   
 let generator
 let myStopFlag = false; // Global stop flag
@@ -77,15 +76,15 @@ async function myAskQuestion() {
   const myTop_p = document.getElementById('myTop_p').value;
   const myTemperature = document.getElementById('myTemperature').value;
   const myChain_of_thought = document.getElementById('myChain_of_thought').value;
- 
+ console.log(` maxT:${myMaxT},   do-sample:${myDo_sample},   top_p:${myTop_p},   temp:${myTemperature},   chain-of-thought:${myChain_of_thought},    `)
   try {
     const output = await generator(messages, {
       max_new_tokens: myMaxT,
-      do_sample: true,
-      top_p: 0.9,
-      temperature: 0.7,
+      do_sample: myDo_sample,
+      top_p: myTop_p,      // 0.9  
+      temperature: myTemperature,   // 0.7
       streamer,
-      chain_of_thought: true,
+      chain_of_thought: myChain_of_thought,
     });
 
     if (!myStopFlag) {
@@ -123,9 +122,12 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 <input id="myLoadButton" type="button" value="Load Model" onclick="myLoadModel()"> Data warning ~1.4 GB saved to cache<br><br>
 <div id="progress">Loading progress: 0%</div>  
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
-Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512">
+Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512"> 
+, do_sample: <input id="myDo_sample" type=checkerbox style="width:60px" checked>
+, top_p: <input id="myTop_p" type=number style="width:60px"  min="0" max="1" step="0.01" value="0.9">
+, temperature: <input id="myTemperature" type=number style="width:60px"  min="0" max="1" step="0.01" value="0.7">
+Chain_of_thought: <input id="myChain_of_thought" type=checkerbox style="width:60px" checked><br>
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
-<input id="myStopButton" type="button" value="Stop Question" onclick="stopGeneration()" >
 <br><br>
 
 <textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
