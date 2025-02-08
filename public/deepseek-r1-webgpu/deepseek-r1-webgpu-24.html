@@ -44,8 +44,8 @@ async function myLoadModel() {
 
 
 async function myAskQuestion() {
-  document.getElementById('myTextarea01').value = ''; 
-    document.getElementById('myAskButton').disabled = true;
+  document.getElementById('myTextarea01').value = '';   // erase the response box
+  document.getElementById('myAskButton').disabled = true;
   document.getElementById('myStopButton').disabled = false;
   myContent = document.getElementById('myArea01').value; 
   const messages = [{ role: "user", content: myContent }];
@@ -154,11 +154,18 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 <div id="progress">Loading progress: 0%</div>  
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
 
-<input id="myDo_sample" type="checkbox"  checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices.">Do_sample: selected, more random<br>
-<input id="myChain_of_thought" type="checkbox" checked>Chain_of_thought: Selected, thinks more<br>
-<input id="myMaxTokens" type=number style="width:60px" value="512"  placeholder="512">Max tokens in the answer: kind of cuts off reply <br> 
-<input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9">Top_p: closer to zero more random, closer to 1 more exacting <br>
-<input id="myTemperature" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.7" placeholder="0.7">Temperature: closer to 1 more random <br>
+
+<input id="myMaxTokens" type=number style="width:60px" value="512"  placeholder="512" title="The maximum number of words or characters the AI can generate in one response. Setting a low value makes shorter answers, while a high value allows for longer responses.">
+   Max tokens in the answer: kind of cuts off reply <br> 
+<input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9" title="Limits the AI's choices to the most likely words. A lower value (e.g., 0.5) makes the response more focused, while a higher value (e.g., 0.9) allows for more variety.">
+   Top_p: closer to zero more random, closer to 1 more exacting <br>
+<input id="myTemperature" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.7" placeholder="0.7" title="Controls how creative the AI is. A low value (e.g., 0.2) makes responses more predictable, while a high value (e.g., 1.0) makes them more random and diverse.">
+   Temperature: closer to 1 more random <br>
+<input id="myDo_sample" type="checkbox"  checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices.">
+   Do_sample: selected, more random<br>
+<input id="myChain_of_thought" type="checkbox" checked title="Encourages the AI to explain its reasoning step by step, making answers more detailed and logical. Useful for math, coding, and problem-solving.">
+   Chain_of_thought: Selected, thinks more.<br>
+  
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
 <input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()" disabled>
 
@@ -169,7 +176,9 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
   let myTextarea = document.getElementById('myTextarea01');
   myTextarea.select(); 
   document.execCommand('copy'); // Copy to clipboard
+  document.getElementById('myKeeparea01') = document.getElementById('myTextarea01');
 }"><br>
+<textarea id="myKeeparea01"  rows="5" cols="95%" placeholder="Full answer goes here later" READONLY></textarea><br><br><br>  
 Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
 Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
 My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a>
