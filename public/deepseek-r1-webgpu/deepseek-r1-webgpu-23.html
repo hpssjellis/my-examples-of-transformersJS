@@ -148,11 +148,11 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 <div id="progress">Loading progress: 0%</div>  
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
 
-Do_sample: <input id="myDo_sample" type="checkbox"  checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices."> Re-thinks about output<br>
-Chain_of_thought: <input id="myChain_of_thought" type="checkbox" checked><br>
-Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512"  placeholder="512"><br> 
-Top_p: <input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9"><br>
-Temperature: <input id="myTemperature" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.7" placeholder="0.7"><br>
+<input id="myDo_sample" type="checkbox"  checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices.">Do_sample: selected, more random<br>
+<input id="myChain_of_thought" type="checkbox" checked>Chain_of_thought: Selected, thinks more<br>
+<input id="myMaxTokens" type=number style="width:60px" value="512"  placeholder="512">Max tokens in the answer: kind of cuts off reply <br> 
+<input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9">Top_p: closer to zero more random, closer to 1 more exacting <br>
+<input id="myTemperature" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.7" placeholder="0.7">Temperature: closer to 1 more random <br>
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
 <input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()" disabled>
 
