@@ -17,7 +17,7 @@ let streamer = null; // Keep track of streamer instance
 let myModel
 let stoppingCriteria = new InterruptableStoppingCriteria();
 
-abortController = new AbortController(); // Create the controller
+// abortController = new AbortController(); // Create the controller
 
 let myContent = document.getElementById('myArea01').value 
 console.log(myContent)
@@ -95,15 +95,17 @@ async function myAskQuestion() {
     });
 
     if (!stoppingCriteria.interrupted) {
-      let myReply = output[0].generated_text.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
-      myTextarea.value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
+      let fullReply = output[0].generated_text.at(-1).content;
+      let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
+      document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
     }
-    
 
+    
   //  if (!myStopFlag) {
       let fullReply = output[0].generated_text.at(-1).content;
       let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
       document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
+    */
    // }
   } catch (error) {
     if (stoppingCriteria.interrupted) {
@@ -120,7 +122,7 @@ async function myAskQuestion() {
 
 
 function myStopGeneration() {
-  if (!myIsGenerating) return;
+//  if (!myIsGenerating) return;
 
   stoppingCriteria.interrupt(); // Gracefully stop the generation
   document.getElementById('progress').textContent = 'Generation stopped.';
