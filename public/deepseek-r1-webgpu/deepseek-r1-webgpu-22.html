@@ -9,6 +9,7 @@ import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingfac
 // Needed for buttons to call module functions
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
+window.stopGeneration = stopGeneration
   
 let generator
 let myStopFlag = false; // Global stop flag
@@ -20,6 +21,7 @@ abortController = new AbortController(); // Create the controller
 
 let myContent = document.getElementById('myArea01').value 
 console.log(myContent)
+  
 
 // Create a text generation pipeline
 async function myLoadModel() {
@@ -35,6 +37,8 @@ async function myLoadModel() {
   document.getElementById('myAskButton').disabled = false
   document.getElementById('progress').textContent = `Loading: Done!`; 
 }
+
+
 
 async function myAskQuestion() {
   document.getElementById('myTextarea01').value = ''; 
@@ -69,6 +73,11 @@ async function myAskQuestion() {
   });
 
   const myMaxT = document.getElementById('myMaxTokens').value;
+  const myDo_sample = document.getElementById('myDo_sample').value;
+  const myTop_p = document.getElementById('myTop_p').value;
+  const myTemperature = document.getElementById('myTemperature').value;
+  const myChain_of_thought = document.getElementById('myChain_of_thought').value;
+ 
   try {
     const output = await generator(messages, {
       max_new_tokens: myMaxT,
@@ -87,6 +96,13 @@ async function myAskQuestion() {
   } catch (error) {
     console.error('Error:', error);
   }
+}
+
+function stopGeneration() {
+  myStopFlag = true; // Set stop flag
+  document.getElementById('progress').textContent = 'Generation stopped.';
+  document.getElementById('myStopButton').disabled = true; // Disable stop button
+  console.log('Stopped.');
 }
 
 
@@ -109,7 +125,7 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
 Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512">
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
-
+<input id="myStopButton" type="button" value="Stop Question" onclick="stopGeneration()" >
 <br><br>
 
 <textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
