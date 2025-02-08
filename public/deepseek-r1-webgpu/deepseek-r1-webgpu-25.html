@@ -44,6 +44,7 @@ async function myLoadModel() {
 
 
 async function myAskQuestion() {
+  window.startTime = performance.now();
   document.getElementById('myTextarea01').value = '';   // erase the response box
   document.getElementById('myAskButton').disabled = true;
   document.getElementById('myStopButton').disabled = false;
@@ -59,17 +60,17 @@ async function myAskQuestion() {
     callback_function: (text) => {
     //  if (myStopFlag) return; // Stop updating if stop flag is set
 
-      if (!window.startTime) {
-        window.startTime = performance.now();
-      }
+   //   if (!window.startTime) {
+    //    window.startTime = performance.now();
+   //   }
       const currentTime = performance.now();
       const elapsedTime = (currentTime - window.startTime) / 1000; 
 
       document.getElementById('myTextarea01').value += text;
       const generatedTokens = document.getElementById('myTextarea01').value.length;
       const tokensPerSecond = generatedTokens / elapsedTime;
-      const progress = parseInt((generatedTokens * 100) / (myMaxT * 10));
-      document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens per second: ${tokensPerSecond.toFixed(2)}, elapsed time: ${elapsedTime}`;
+      const progress = parseInt((generatedTokens * 10) / (myMaxT));
+      document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens per second: ${tokensPerSecond.toFixed(2)}, elapsed time: ${elapsedTime.toFixed(0)} seconds`;
 
       if (progress >= 100) {
         window.startTime = null;
