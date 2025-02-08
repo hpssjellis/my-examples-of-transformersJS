@@ -9,7 +9,6 @@ import { pipeline, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingfac
 // Needed for buttons to call module functions
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
-window.stopGeneration = stopGeneration
   
 let generator
 let myStopFlag = false; // Global stop flag
@@ -21,34 +20,6 @@ abortController = new AbortController(); // Create the controller
 
 let myContent = document.getElementById('myArea01').value 
 console.log(myContent)
-  
-
-/*
-function stopGeneration() {
-  if (abortController) {
-    abortController.abort(); // Stop generation
-    abortController = null;
-    document.getElementById('progress').textContent = 'Generation stopped.';
-    document.getElementById('myStopButton').disabled = true;
-    console.log('Stopped');
-  }
-}
-
-  */
-
-/*
-function stopGeneration() {
-  console.log('Trying to stop it')
-  if (streamer) {
-  //  streamer.abort();  // Stop the text generation
-    streamer = null;  // Clear the streamer
-    document.getElementById('progress').textContent = 'Generation stopped.';
-    //document.getElementById('myStopButton').disabled = true;
-    console.log('Stopped?')
-  }
-} 
-
-  */
 
 // Create a text generation pipeline
 async function myLoadModel() {
@@ -64,8 +35,6 @@ async function myLoadModel() {
   document.getElementById('myAskButton').disabled = false
   document.getElementById('progress').textContent = `Loading: Done!`; 
 }
-
-
 
 async function myAskQuestion() {
   document.getElementById('myTextarea01').value = ''; 
@@ -120,141 +89,7 @@ async function myAskQuestion() {
   }
 }
 
-function stopGeneration() {
-  myStopFlag = true; // Set stop flag
-  document.getElementById('progress').textContent = 'Generation stopped.';
-  document.getElementById('myStopButton').disabled = true; // Disable stop button
-  console.log('Stopped.');
-}
 
-
-
-
-
-/*
-
-async function myAskQuestion() {
-  document.getElementById('myTextarea01').value = ''; 
-  myContent = document.getElementById('myArea01').value; 
-  const messages = [{ role: "user", content: myContent }];
-  
-  streamer = new TextStreamer(generator.tokenizer, {
-    skip_prompt: true,
-    callback_function: (text) => {
-      if (!window.startTime) {
-        window.startTime = performance.now();
-      }
-      const currentTime = performance.now();
-      const elapsedTime = (currentTime - window.startTime) / 1000; 
-      
-      document.getElementById('myTextarea01').value += text;
-      const generatedTokens = document.getElementById('myTextarea01').value.length;
-      const tokensPerSecond = generatedTokens / elapsedTime;
-      const progress = parseInt((generatedTokens * 100) / (myMaxT * 10));
-      document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens per second: ${tokensPerSecond.toFixed(2)}`;
-
-      if (progress >= 100) {
-        window.startTime = null;
-      }
-    },
-  });
-
-  abortController = new AbortController(); // Create the controller
-
-  const myMaxT = document.getElementById('myMaxTokens').value;
-  try {
-    const output = await generator(messages, {
-      max_new_tokens: myMaxT,
-      do_sample: true,
-      top_p: 0.9,
-      temperature: 0.7,
-      streamer,
-      chain_of_thought: true,
-      signal: abortController.signal, // Pass the signal
-    });
-
-    let fullReply = output[0].generated_text.at(-1).content;
-    let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "");
-    document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.log('Generation stopped by user.');
-    } else {
-      console.error('Error:', error);
-    }
-  }
-}
-
-
-*/
-
-/*
-  
-async function myAskQuestion() {
-  document.getElementById('myTextarea01').value = '' 
-  myContent = document.getElementById('myArea01').value 
-
-  // Define the list of messages
-  const messages = [{ role: "user", content: myContent }];
-  console.log(myContent)
- const streamer = new TextStreamer(generator.tokenizer, {
- // streamer = new TextStreamer(generator.tokenizer, {
-  skip_prompt: true,
-  callback_function: (text) => {
-    if (!window.startTime) {
-      window.startTime = performance.now();
-    }
-    const currentTime = performance.now();
-    const elapsedTime = (currentTime - window.startTime) / 1000; // elapsed time in seconds
-    
-    document.getElementById('myTextarea01').value += text;
-    
-    const generatedTokens = document.getElementById('myTextarea01').value.length;
-    const tokensPerSecond = generatedTokens / elapsedTime; // calculate tokens per second
-
-    const progress = parseInt((generatedTokens * 100) / (myMaxT * 10));
-    document.getElementById('progress').textContent = `Answer progress: ~${progress}%, Tokens per second: ${tokensPerSecond.toFixed(2)}`;
-
-    // Optional: Reset startTime when completed
-    if (progress >= 100) {
-      window.startTime = null;
-    }
-  },
-});
-
-*/
-/*
-  
-  const streamer = new TextStreamer(generator.tokenizer, {
-    skip_prompt: true,
-    callback_function: (text) => { 
-      document.getElementById('myTextarea01').value += text 
-      const progress = parseInt(document.getElementById('myTextarea01').value.length *100/ (myMaxT*10));   // randomly said it is 10 times the max token
-      document.getElementById('progress').textContent = `Answer progress: ~${progress}%`;// ${(text.progress).toFixed(2)}%`;
-     
-    }, // Optional callback function   
-  })
-
-
-
-
-  
-  // Generate a response with additional parameters
-  const myMaxT = document.getElementById('myMaxTokens').value
-  const output = await generator(messages, {
-    max_new_tokens: myMaxT,
-    do_sample: true, // Enable sampling  false may have more repetition
-    top_p: 0.9, // Set top_p value // probablily percent ie 0.9 = only show next token with a 90% chance
-    temperature: 0.7, // Set temperature value, higher more random lower more focused
-    streamer, // Stream the generated text
-    chain_of_thought: true, // Enable chain of thought reasoning (if supported)
-  });
-  let fullReply = output[0].generated_text.at(-1).content
-  console.log(fullReply);
-  let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "")
-  document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}` 
-}
-*/
 </script>
 </head>
 <body>
@@ -274,7 +109,7 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
 Max tokens in the answer: <input id="myMaxTokens" type=number style="width:60px" value="512">
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
-<input id="myStopButton" type="button" value="Stop Question" onclick="stopGeneration()" >
+
 <br><br>
 
 <textarea id="myTextarea01"  rows="20" cols="95%" placeholder="Reply Goes here" READONLY></textarea><br><br>
