@@ -178,7 +178,7 @@ Uses the Web-gpu model or other models: <input id="myModelInput" type=text size=
  // myTextarea.select(); 
   document.getElementById('myTextarea01').select()
   document.execCommand('copy') // Copy to clipboard
-  document.getElementById('myKeeparea01').value += document.getElementById('myTextarea01').value
+  document.getElementById('myKeeparea01').value += '\r\n\r\n'+document.getElementById('myTextarea01').value
 }"><br>
 <textarea id="myKeeparea01"  rows="5" cols="95%" placeholder="Copy here only when wished" READONLY></textarea><br><br><br>  
 Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
