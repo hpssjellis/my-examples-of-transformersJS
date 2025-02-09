@@ -83,6 +83,14 @@ async function myAskQuestion() {
   const myTop_p = document.getElementById('myTop_p').value;
   const myTemperature = document.getElementById('myTemperature').value;
   const myChain_of_thought = document.getElementById('myChain_of_thought').value;
+  
+  const myTop_k = document.getElementById('myTop_k').value;
+  const myMin_length = document.getElementById('myMin_length').value;
+  const myRepetition_penalty = document.getElementById('myRepetition_penalty').value;
+  const myLength_penalty = document.getElementById('myLength_penalty').value;
+  const myEarly_stopping = document.getElementById('myEarly_stopping').value;
+  
+  
  console.log(` maxT:${myMaxT},   do-sample:${myDo_sample},   top_p:${myTop_p},   temp:${myTemperature},   chain-of-thought:${myChain_of_thought},    `)
 
     stoppingCriteria = new InterruptableStoppingCriteria(); // Reset stopping criteria before generation
@@ -95,11 +103,12 @@ async function myAskQuestion() {
       top_p: myTop_p,      // 0.9  
       temperature: myTemperature,   // 0.7
       
-      top_k: 50,    // testing if it does top_k
-      min_length: 20,  // Ensures at least 20 tokens are generated
-      repetition_penalty: 1.2,
-      length_penalty: 1.5,
-      early_stopping: true,   // end testing
+      top_k: myTop_k,    // testing if it does top_k  50
+      min_length: myMin_length,  // Ensures at least 20 tokens are generated
+      repetition_penalty: myRepetition_penalty,   //1.2
+      length_penalty: myLength_penalty,     //1.5
+      early_stopping: myEarly_stopping,   // end testing  true false
+      
       streamer,
       chain_of_thought: myChain_of_thought,
       stopping_criteria: stoppingCriteria, // Use stopping criteria for clean stopping
@@ -138,7 +147,7 @@ function myStopGeneration() {
 
   stoppingCriteria.interrupt(); // Gracefully stop the generation
   document.getElementById('progress').textContent = 'Generation stopped.';
-    document.getElementById('myAskButton').disabled = false;
+  document.getElementById('myAskButton').disabled = false;
   document.getElementById('myStopButton').disabled = true;
   console.log('Stopped.');
 }
@@ -163,11 +172,25 @@ It will load from cache if downloaded once. Uses the Web-GPU TransformersJS Deep
 <input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9" title="Limits the AI's choices to the most likely words. A lower value (e.g., 0.5) makes the response more focused, while a higher value (e.g., 0.9) allows for more variety.">
    Top_p: closer to zero more focused, closer to 1 more variety <br>
 <input id="myTemperature" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.7" placeholder="0.7" title="Controls how creative the AI is. A low value (e.g., 0.2) makes responses more predictable, while a high value (e.g., 1.0) makes them more random and diverse.">
-   Temperature: Close to 0 more predictable, closer to 1 more diverse <br>
+   Temperature: Close to 0 more predictable, closer to 1 more diverse <br><br>
+
+<input id="myTop_k" type="number" style="width:60px"  min="0" max="300" step="1" value="50" placeholder="50" title="">
+   Top_k: <br>
+<input id="myMin_length" type="number" style="width:60px"  min="0" max="10000" step="1" value="20" placeholder="20" title="">
+   Min_length: <br>
+<input id="myRepetition_penalty" type="number" style="width:60px"  min="0" max="10" step="0.1" value="1.2" placeholder="1.2" title="">
+   Repetition_penalty: <br>
+<input id="myLength_penalty" type="number" style="width:60px"  min="0" max="10" step="0.1" value="1.5" placeholder="1.5" title="">
+   Length_penalty: <br><br>
+  
 <input id="myDo_sample" type="checkbox"  checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices.">
    Do_sample: when selected, picks and considers more token options making it varied and creative, not selected keeps safest token<br>
 <input id="myChain_of_thought" type="checkbox" checked title="Encourages the AI to explain its reasoning step by step, making answers more detailed and logical. Useful for math, coding, and problem-solving.">
-   Chain_of_thought: AI explains more about it's token creation process.<br><br>
+   Chain_of_thought: AI explains more about it's token creation process.<br>
+<input id="myEarly_stopping" type="checkbox" checked title="">
+   Early_stopping:<br><br>
+
+
   
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
 <input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()" disabled><br><br>
