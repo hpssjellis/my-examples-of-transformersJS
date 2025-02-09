@@ -94,6 +94,7 @@ async function myAskQuestion() {
       do_sample: myDo_sample,
       top_p: myTop_p,      // 0.9  
       temperature: myTemperature,   // 0.7
+      top_k: 50,    // testing if it does top_k
       streamer,
       chain_of_thought: myChain_of_thought,
       stopping_criteria: stoppingCriteria, // Use stopping criteria for clean stopping
