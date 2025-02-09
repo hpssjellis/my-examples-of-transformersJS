@@ -108,6 +108,7 @@ async function myAskQuestion() {
       repetition_penalty: myRepetition_penalty,   //1.2
       length_penalty: myLength_penalty,     //1.5
       early_stopping: myEarly_stopping,   // end testing  true false
+      num_return_sequences: 3,     // really confusing since one sequence is too much
       
       streamer,
       chain_of_thought: myChain_of_thought,
