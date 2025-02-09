@@ -98,22 +98,22 @@ async function myAskQuestion() {
   
   try {
     const output = await generator(messages, {
-      max_new_tokens: myMaxT,
-      do_sample: myDo_sample,
-      top_p: myTop_p,      // 0.9  
+      max_new_tokens: myMaxT,       // 512
+      do_sample: myDo_sample,       // true
+      top_p: myTop_p,               // 0.9  
       temperature: myTemperature,   // 0.7
       crapCheck: 65,
       
-      top_k: myTop_k,    // testing if it does top_k  50
-      min_length: myMin_length,  // Ensures at least 20 tokens are generated
-      repetition_penalty: myRepetition_penalty,   //1.2
-      length_penalty: myLength_penalty,     //1.5
-      early_stopping: myEarly_stopping,   // end testing  true false
-      num_return_sequences: 1,     // really confusing since one sequence is too much
+      top_k: myTop_k,              // testing if it does top_k  50
+      min_length: myMin_length,    // Ensures at least 20 tokens are generated
+      repetition_penalty: myRepetition_penalty,   // 1.2
+      length_penalty: myLength_penalty,           // 1.5
+      early_stopping: myEarly_stopping,           // end testing  true false
+      num_return_sequences: 1,                    // 1
       
-      streamer,
-      chain_of_thought: myChain_of_thought,
-      stopping_criteria: stoppingCriteria, // Use stopping criteria for clean stopping
+      streamer,                                  // calls the function TextStreamer
+      chain_of_thought: myChain_of_thought,      // true
+      stopping_criteria: stoppingCriteria,       // Use stopping criteria for clean stopping
 
     });
 
