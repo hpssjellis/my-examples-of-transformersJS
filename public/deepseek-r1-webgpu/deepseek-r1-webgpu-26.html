@@ -53,7 +53,9 @@ async function myAskQuestion() {
 
  // myStopFlag = false; // Reset stop flag before starting
 //  document.getElementById('myStopButton').disabled = false; // Enable stop button
-
+let myTemp = ""; // Temporary storage for text
+let myCount = 0; // Counter to track updates
+let myTextarea = document.getElementById('myTextarea01');
   // Clear any existing streamer instance before starting a new one
   streamer = new TextStreamer(generator.tokenizer, {
     skip_prompt: true,
@@ -63,17 +65,34 @@ async function myAskQuestion() {
    //   if (!window.startTime) {
     //    window.startTime = performance.now();
    //   }
+
+
+
+      
       const currentTime = performance.now();
       const elapsedTime = (currentTime - window.startTime) / 1000; 
 
      // document.getElementById('myTextarea01').value += text;
 
 
+
+        myTemp += text; // Store incoming text
+        myCount++; // Count updates       
+        if (myCount >= 5) { // Update textarea every x tokens to speed it up
+            myTextarea.value += myTemp;
+            myTemp = ""; // Clear temporary storage
+            myCount = 0; // Reset counter
+
+            if (document.activeElement !== myTextarea) {   
+                myTextarea.scrollTop = myTextarea.scrollHeight; // Auto-scroll to bottom
+            }
+        }
+/*
       document.getElementById('myTextarea01').value += text;
        if (document.activeElement != document.getElementById('myTextarea01') ) {   // super irritating without this.
           document.getElementById('myTextarea01').scrollTop = document.getElementById('myTextarea01').scrollHeight; // Auto-scroll to bottom
        }
-
+*/
 
       
       const generatedTokens = document.getElementById('myTextarea01').value.length;
