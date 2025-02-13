@@ -181,7 +181,8 @@ async function myRenderMath() {
  // myMathText = myMathText.replace(/\r?\n/g, ' \\\\ '); // Convert line breaks to LaTeX newlines
       // Replace newlines with ' \\ ' to preserve spacing
 // myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
- myMathText = myMathText.replace(/\r\n/g, ' \\\\\\\\ ');
+ myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' \\\\\\\\ ');
+// myMathText = myMathText.replace(/\r\n/g, ' \\\\\\\\ ');
    //   myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
 
  //   // Step 2: Ensure spaces around newlines are preserved
