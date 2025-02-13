@@ -184,8 +184,9 @@ async function myRenderMath() {
 // myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' // ');
 // myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
   
-  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' \\\\ '); 
- console.log(myMathText)
+ // myMathText = myMathText.replace(/\r\n|\n|\r/g, ' \\\\ '); 
+  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' <br> '); 
+  console.log(myMathText)
 // myMathText = myMathText.replace(/\r\n/g, ' \\\\\\\\ ');
    //   myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
 
@@ -201,7 +202,8 @@ async function myRenderMath() {
   
     let myMathDiv = document.getElementById("myMathOutput");
     console.log(document.getElementById("myMathOutput").textContent)
-    myMathDiv.innerHTML = `\\[${myMathText}\\]`;
+  //  myMathDiv.innerHTML = `\\[${myMathText}\\]`;
+    myMathDiv.innerHTML = myMathText
 
     await MathJax.typesetPromise([myMathDiv]);
 }
