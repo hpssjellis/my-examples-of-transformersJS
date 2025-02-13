@@ -13,6 +13,7 @@ import { pipeline, TextStreamer, InterruptableStoppingCriteria } from 'https://c
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
 window.myStopGeneration = myStopGeneration;
+window.myRenderMath = myRenderMath
   
 let generator
 //let myStopFlag = false; // Global stop flag
@@ -82,7 +83,6 @@ let myTextarea = document.getElementById('myTextarea01');
         myTemp += text; // Store incoming text
         myCount++; // Count updates       
         if (myCount >= 5) { // Update textarea every x tokens to speed it up
-         //   myRenderMath()
             myTextarea.value += myTemp;
             myTemp = ""; // Clear temporary storage
             myCount = 0; // Reset counter
@@ -241,6 +241,10 @@ It will load from cache if downloaded once. Uses the Web-GPU TransformersJS Deep
 
 <h3>Rendered Output:</h3>
   <div id="myMathOutput" style="font-size: 1.5em; border: 1px solid black; padding: 10px;">
+
+<input type=button value="Render Math" onclick="{  
+   myRenderMath()
+}"><br>
 
 <input type=button value="Copy" onclick="{  
   document.getElementById('myTextarea01').select()
