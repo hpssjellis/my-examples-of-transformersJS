@@ -178,6 +178,7 @@ let myTextarea = document.getElementById('myTextarea01');
 async function myRenderMath() {
   let myMathText = document.getElementById("myTextarea01").value;
  // document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
+  myMathText = myMathText.replace(/\r?\n/g, ' \\\\ '); // Convert line breaks to LaTeX newlines
   document.getElementById("myMathOutput").innerHTML = myMathText;
   await MathJax.typesetPromise();
 }
