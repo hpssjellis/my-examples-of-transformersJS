@@ -180,7 +180,11 @@ async function myRenderMath() {
  // document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
  // myMathText = myMathText.replace(/\r?\n/g, ' \\\\ '); // Convert line breaks to LaTeX newlines
       // Replace newlines with ' \\ ' to preserve spacing
-  myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' \\\\ ');
+//  myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' \\\\ ');
+      myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
+
+    // Step 2: Ensure spaces around newlines are preserved
+    myMathText = myMathText.replace(/LINEBREAK/g, ' \\\\ ');  
   document.getElementById("myMathOutput").innerHTML = myMathText;
   await MathJax.typesetPromise();
 }
@@ -246,13 +250,17 @@ It will load from cache if downloaded once. Uses the Web-GPU TransformersJS Deep
 <h3>Rendered Output:</h3>
   <div id="myMathOutput" style="font-size: 1.5em; border: 1px solid black; padding: 10px;">
     ...
-</div>
+</div><br>
 
 <input type=button value="Render Math" onclick="{  
    myRenderMath()
-}"><br>
+}">
+<input type=button value="Copy Rendered" onclick="{  
+  document.getElementById('myMathOutput').select()
+  document.execCommand('copy') // Copy to clipboard
+}">
 
-<input type=button value="Copy" onclick="{  
+<input type=button value="Copy Regular" onclick="{  
   document.getElementById('myTextarea01').select()
   document.execCommand('copy') // Copy to clipboard
   document.getElementById('myKeeparea01').value += '\r\n\r\n'+document.getElementById('myTextarea01').value
