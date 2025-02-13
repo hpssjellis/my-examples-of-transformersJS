@@ -180,11 +180,11 @@ async function myRenderMath() {
  // document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
  // myMathText = myMathText.replace(/\r?\n/g, ' \\\\ '); // Convert line breaks to LaTeX newlines
       // Replace newlines with ' \\ ' to preserve spacing
-//  myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' \\\\ ');
-      myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
+ myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
+   //   myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
 
-    // Step 2: Ensure spaces around newlines are preserved
-    myMathText = myMathText.replace(/LINEBREAK/g, ' \\\\ ');  
+ //   // Step 2: Ensure spaces around newlines are preserved
+  //  myMathText = myMathText.replace(/LINEBREAK/g, '\\\\');  
   document.getElementById("myMathOutput").innerHTML = myMathText;
   await MathJax.typesetPromise();
 }
