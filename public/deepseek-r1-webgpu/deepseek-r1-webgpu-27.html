@@ -190,6 +190,7 @@ async function myRenderMath() {
  //   // Step 2: Ensure spaces around newlines are preserved
   //  myMathText = myMathText.replace(/LINEBREAK/g, '\\\\');  
   document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
+ console.log(document.getElementById("myMathOutput").textContent)
   await MathJax.typesetPromise();
 }
 
