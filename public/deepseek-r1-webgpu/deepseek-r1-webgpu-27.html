@@ -182,14 +182,23 @@ async function myRenderMath() {
       // Replace newlines with ' \\ ' to preserve spacing
 // myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
 // myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' // ');
- myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
+// myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
+  
+  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' \\\\\\ '); 
  console.log(myMathText)
 // myMathText = myMathText.replace(/\r\n/g, ' \\\\\\\\ ');
    //   myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
 
  //   // Step 2: Ensure spaces around newlines are preserved
   //  myMathText = myMathText.replace(/LINEBREAK/g, '\\\\');  
+
+
+///    \:
+  
   document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
+
+
+  
  console.log(document.getElementById("myMathOutput").textContent)
   await MathJax.typesetPromise();
 }
