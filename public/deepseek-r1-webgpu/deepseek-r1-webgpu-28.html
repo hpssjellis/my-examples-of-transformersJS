@@ -174,6 +174,7 @@ let myTextarea = document.getElementById('myTextarea01');
   } finally {
    // myIsGenerating = false;
     clearInterval(myTimerRender)
+    myRenderMath()               // just to do it one last time
     document.getElementById('myAskButton').disabled = false;
     document.getElementById('myStopButton').disabled = true;
   }
