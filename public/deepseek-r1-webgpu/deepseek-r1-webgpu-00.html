@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0-alpha.1/es5/tex-mml-chtml.js"></script>
+
   
 <script type="module">
 import { pipeline, TextStreamer, InterruptableStoppingCriteria } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.2';
@@ -10,12 +13,15 @@ import { pipeline, TextStreamer, InterruptableStoppingCriteria } from 'https://c
 window.myLoadModel = myLoadModel
 window.myAskQuestion = myAskQuestion
 window.myStopGeneration = myStopGeneration;
+window.myRenderMath = myRenderMath
   
 let generator
 //let myStopFlag = false; // Global stop flag
 let streamer = null; // Keep track of streamer instance
 let myModel
 let stoppingCriteria = new InterruptableStoppingCriteria();
+let myTimerRender
+
 
 // abortController = new AbortController(); // Create the controller
 
@@ -45,6 +51,7 @@ async function myLoadModel() {
 
 async function myAskQuestion() {
   window.startTime = performance.now();
+  myTimerRender = setInterval(myRenderMath, 3000);
   document.getElementById('myTextarea01').value = '';   // erase the response box
   document.getElementById('myAskButton').disabled = true;
   document.getElementById('myStopButton').disabled = false;
@@ -53,7 +60,9 @@ async function myAskQuestion() {
 
  // myStopFlag = false; // Reset stop flag before starting
 //  document.getElementById('myStopButton').disabled = false; // Enable stop button
-
+let myTemp = ""; // Temporary storage for text
+let myCount = 0; // Counter to track updates
+let myTextarea = document.getElementById('myTextarea01');
   // Clear any existing streamer instance before starting a new one
   streamer = new TextStreamer(generator.tokenizer, {
     skip_prompt: true,
@@ -63,10 +72,36 @@ async function myAskQuestion() {
    //   if (!window.startTime) {
     //    window.startTime = performance.now();
    //   }
+
+
+
+      
       const currentTime = performance.now();
       const elapsedTime = (currentTime - window.startTime) / 1000; 
 
+     // document.getElementById('myTextarea01').value += text;
+
+
+
+        myTemp += text; // Store incoming text
+        myCount++; // Count updates       
+        if (myCount >= 5) { // Update textarea every x tokens to speed it up
+            myTextarea.value += myTemp;
+            myTemp = ""; // Clear temporary storage
+            myCount = 0; // Reset counter
+
+            if (document.activeElement !== myTextarea) {   
+                myTextarea.scrollTop = myTextarea.scrollHeight; // Auto-scroll to bottom
+            }
+        }
+/*
       document.getElementById('myTextarea01').value += text;
+       if (document.activeElement != document.getElementById('myTextarea01') ) {   // super irritating without this.
+          document.getElementById('myTextarea01').scrollTop = document.getElementById('myTextarea01').scrollHeight; // Auto-scroll to bottom
+       }
+*/
+
+      
       const generatedTokens = document.getElementById('myTextarea01').value.length;
       const tokensPerSecond = generatedTokens / elapsedTime;
       const progress = parseInt((generatedTokens * 10) / (myMaxT));
@@ -83,6 +118,14 @@ async function myAskQuestion() {
   const myTop_p = document.getElementById('myTop_p').value;
   const myTemperature = document.getElementById('myTemperature').value;
   const myChain_of_thought = document.getElementById('myChain_of_thought').value;
+  
+  const myTop_k = document.getElementById('myTop_k').value;
+  const myMin_length = document.getElementById('myMin_length').value;
+  const myRepetition_penalty = document.getElementById('myRepetition_penalty').value;
+  const myLength_penalty = document.getElementById('myLength_penalty').value;
+  const myEarly_stopping = document.getElementById('myEarly_stopping').value;
+  
+  
  console.log(` maxT:${myMaxT},   do-sample:${myDo_sample},   top_p:${myTop_p},   temp:${myTemperature},   chain-of-thought:${myChain_of_thought},    `)
 
     stoppingCriteria = new InterruptableStoppingCriteria(); // Reset stopping criteria before generation
@@ -90,13 +133,22 @@ async function myAskQuestion() {
   
   try {
     const output = await generator(messages, {
-      max_new_tokens: myMaxT,
-      do_sample: myDo_sample,
-      top_p: myTop_p,      // 0.9  
+      max_new_tokens: myMaxT,       // 512
+      do_sample: myDo_sample,       // true
+      top_p: myTop_p,               // 0.9  
       temperature: myTemperature,   // 0.7
-      streamer,
-      chain_of_thought: myChain_of_thought,
-      stopping_criteria: stoppingCriteria, // Use stopping criteria for clean stopping
+      crapCheck: 65,
+      
+      top_k: myTop_k,              // testing if it does top_k  50
+      min_length: myMin_length,    // Ensures at least 20 tokens are generated
+      repetition_penalty: myRepetition_penalty,   // 1.2
+      length_penalty: myLength_penalty,           // 1.5
+      early_stopping: myEarly_stopping,           // end testing  true false
+      num_return_sequences: 1,                    // 1
+      
+      streamer,                                  // calls the function TextStreamer
+      chain_of_thought: myChain_of_thought,      // true
+      stopping_criteria: stoppingCriteria,       // Use stopping criteria for clean stopping
 
     });
 
@@ -121,18 +173,34 @@ async function myAskQuestion() {
     }
   } finally {
    // myIsGenerating = false;
+    clearInterval(myTimerRender)
+    myRenderMath()               // just to do it one last time
     document.getElementById('myAskButton').disabled = false;
     document.getElementById('myStopButton').disabled = true;
   }
 }
 
+async function myRenderMath() {
+  let myMathText = document.getElementById("myTextarea01").value;
+  myMathText = myMathText.replace(/^###\s*(.*)$/gm, "<h2>$1</h2>");       // Input:  "### This is a heading";  Output: <h2>This is a heading</h2>
+  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' <br> ');               // line feed to <br>
+  myMathText = myMathText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");         // Input: "**Solution:**"; Output: <b>Solution:</b>
+
+//  console.log(myMathText)
+
+  let myMathDiv = document.getElementById("myMathOutput");
+ // console.log(document.getElementById("myMathOutput").textContent)
+  myMathDiv.innerHTML = myMathText
+
+  await MathJax.typesetPromise([myMathDiv]);
+}
 
 function myStopGeneration() {
 //  if (!myIsGenerating) return;
-
+  clearInterval(myTimerRender)
   stoppingCriteria.interrupt(); // Gracefully stop the generation
   document.getElementById('progress').textContent = 'Generation stopped.';
-    document.getElementById('myAskButton').disabled = false;
+  document.getElementById('myAskButton').disabled = false;
   document.getElementById('myStopButton').disabled = true;
   console.log('Stopped.');
 }
@@ -148,35 +216,69 @@ huggingface.co/onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX </a> then you s
 It will load from cache if downloaded once. Uses the Web-GPU TransformersJS DeepseekR1 model or other models: <input id="myModelInput" type=text size=60 value="onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX"> <br><br>
 
 <input id="myLoadButton" type="button" style="background-color:lime" value="Load Model" onclick="myLoadModel()"> Data warning ~1.4 GB saved to cache<br><br>
-<div id="progress">Loading progress: 0%</div>  
-<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">What is the answer to the ultimate question of life?</textarea><br>
 
+<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">Solve the equation: x^2 - 3x + 2 = 0</textarea><br>
 
+<details closed> <summary>Click for hyperparameters which may or may not work</summary> 
 <input id="myMaxTokens" type=number style="width:60px" value="512"  placeholder="512" title="The maximum number of words or characters the AI can generate in one response. Setting a low value makes shorter answers, while a high value allows for longer responses.">
    Max tokens in the answer: kind of cuts off the reply <br> 
 <input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9" title="Limits the AI's choices to the most likely words. A lower value (e.g., 0.5) makes the response more focused, while a higher value (e.g., 0.9) allows for more variety.">
    Top_p: closer to zero more focused, closer to 1 more variety <br>
 <input id="myTemperature" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.7" placeholder="0.7" title="Controls how creative the AI is. A low value (e.g., 0.2) makes responses more predictable, while a high value (e.g., 1.0) makes them more random and diverse.">
-   Temperature: Close to 0 more predictable, closer to 1 more diverse <br>
+   Temperature: Close to 0 more predictable, closer to 1 more diverse <br><br>
+
+<input id="myTop_k" type="number" style="width:60px"  min="0" max="300" step="1" value="50" placeholder="50" title="">
+   Top_k: <br>
+<input id="myMin_length" type="number" style="width:60px"  min="0" max="10000" step="1" value="20" placeholder="20" title="">
+   Min_length: <br>
+<input id="myRepetition_penalty" type="number" style="width:60px"  min="0" max="10" step="0.1" value="1.2" placeholder="1.2" title="">
+   Repetition_penalty: <br>
+<input id="myLength_penalty" type="number" style="width:60px"  min="0" max="10" step="0.1" value="1.5" placeholder="1.5" title="">
+   Length_penalty: <br><br>
+  
 <input id="myDo_sample" type="checkbox"  checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices.">
-   Do_sample: when selected, picks and considers more token options making it varied and cretive, not selected keeps safest token<br>
+   Do_sample: when selected, picks and considers more token options making it varied and creative, not selected keeps safest token<br>
 <input id="myChain_of_thought" type="checkbox" checked title="Encourages the AI to explain its reasoning step by step, making answers more detailed and logical. Useful for math, coding, and problem-solving.">
-   Chain_of_thought: AI explains more about it's token creation process.<br><br>
+   Chain_of_thought: AI explains more about it's token creation process.<br>
+<input id="myEarly_stopping" type="checkbox" checked title="">
+   Early_stopping:<br><br>
+
+</details><br>
   
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
-<input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()" disabled>
-
+<input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()" disabled><br><br>
+<div id="progress">Loading progress: 0%</div>  
 <br><br>
 
 <textarea id="myTextarea01"  rows="20"  style="width:100%;" placeholder="Reply Goes here" READONLY></textarea><br><br>
-<input type=button value="copy" onclick="{  
-//  let myTextarea = document.getElementById('myTextarea01');
- // myTextarea.select(); 
+
+
+<h3>Rendered Output:</h3>
+  <div id="myMathOutput" style="font-size: 1.5em; border: 1px solid black; padding: 10px;">
+    ...
+</div><br>
+
+<input type=button value="Render Math" onclick="{  
+   myRenderMath()
+}">
+<input type=button value="Copy Rendered" onclick="{  
+  document.getElementById('myMathOutput').select()
+  document.execCommand('copy') // Copy to clipboard
+}">
+
+<input type=button value="Copy Regular" onclick="{  
   document.getElementById('myTextarea01').select()
   document.execCommand('copy') // Copy to clipboard
   document.getElementById('myKeeparea01').value += '\r\n\r\n'+document.getElementById('myTextarea01').value
+}">
+<input type=button value="Clear" onclick="{  
+  document.getElementById('myKeeparea01').value =''
 }"><br>
+  
 <textarea id="myKeeparea01"  rows="5"  style="width:100%;" placeholder="Copy here only when wished" READONLY></textarea><br><br><br>  
+
+
+  
 Use at your own risk, by <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">Jeremy Ellis LinkedIn</a><br> 
 Github index at <a href="https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
 My transformersjs github where the work was done <a href="https://github.com/hpssjellis/my-examples-of-transformersJS">https://github.com/hpssjellis/my-examples-of-transformersJS</a>
