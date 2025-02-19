@@ -173,6 +173,7 @@ let myTextarea = document.getElementById('myTextarea01');
     }
   } finally {
    // myIsGenerating = false;
+    clearInterval(myTimerRender)
     document.getElementById('myAskButton').disabled = false;
     document.getElementById('myStopButton').disabled = true;
   }
@@ -180,35 +181,17 @@ let myTextarea = document.getElementById('myTextarea01');
 
 async function myRenderMath() {
   let myMathText = document.getElementById("myTextarea01").value;
- // document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
- // myMathText = myMathText.replace(/\r?\n/g, ' \\\\ '); // Convert line breaks to LaTeX newlines
-      // Replace newlines with ' \\ ' to preserve spacing
-// myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
-// myMathText = myMathText.replace(/\s*\r?\n\s*/g, ' // ');
-// myMathText = myMathText.replace(/\s*\r?\n\s*/g, '\\\\');
-  
- // myMathText = myMathText.replace(/\r\n|\n|\r/g, ' \\\\ '); 
   myMathText = myMathText.replace(/\r\n|\n|\r/g, ' <br> '); 
+
+  myMathText = myMathText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");   //Input: "**Solution:**"; Output: <b>Solution:</b>
+
   console.log(myMathText)
-// myMathText = myMathText.replace(/\r\n/g, ' \\\\\\\\ ');
-   //   myMathText = myMathText.replace(/\r\n|\n|\r/g, 'LINEBREAK'); 
 
- //   // Step 2: Ensure spaces around newlines are preserved
-  //  myMathText = myMathText.replace(/LINEBREAK/g, '\\\\');  
+  let myMathDiv = document.getElementById("myMathOutput");
+  console.log(document.getElementById("myMathOutput").textContent)
+  myMathDiv.innerHTML = myMathText
 
-
-///    \:
-  
-//  document.getElementById("myMathOutput").innerHTML = `\\[${myMathText}\\]`;
-
-
-  
-    let myMathDiv = document.getElementById("myMathOutput");
-    console.log(document.getElementById("myMathOutput").textContent)
-  //  myMathDiv.innerHTML = `\\[${myMathText}\\]`;
-    myMathDiv.innerHTML = myMathText
-
-    await MathJax.typesetPromise([myMathDiv]);
+  await MathJax.typesetPromise([myMathDiv]);
 }
 
 function myStopGeneration() {
