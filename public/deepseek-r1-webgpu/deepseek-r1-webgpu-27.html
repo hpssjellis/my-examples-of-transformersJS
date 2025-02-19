@@ -20,6 +20,8 @@ let generator
 let streamer = null; // Keep track of streamer instance
 let myModel
 let stoppingCriteria = new InterruptableStoppingCriteria();
+let myTimerRender
+
 
 // abortController = new AbortController(); // Create the controller
 
@@ -49,6 +51,7 @@ async function myLoadModel() {
 
 async function myAskQuestion() {
   window.startTime = performance.now();
+  myTimerRender = setInterval(myRenderMath, 3000);
   document.getElementById('myTextarea01').value = '';   // erase the response box
   document.getElementById('myAskButton').disabled = true;
   document.getElementById('myStopButton').disabled = false;
@@ -210,7 +213,7 @@ async function myRenderMath() {
 
 function myStopGeneration() {
 //  if (!myIsGenerating) return;
-
+  clearInterval(myTimerRender)
   stoppingCriteria.interrupt(); // Gracefully stop the generation
   document.getElementById('progress').textContent = 'Generation stopped.';
   document.getElementById('myAskButton').disabled = false;
@@ -232,7 +235,7 @@ It will load from cache if downloaded once. Uses the Web-GPU TransformersJS Deep
 
 <textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">Solve the equation: x^2 - 3x + 2 = 0</textarea><br>
 
-
+<details closed> <summary>Click for hyperparameters which may or may not work</summary> 
 <input id="myMaxTokens" type=number style="width:60px" value="512"  placeholder="512" title="The maximum number of words or characters the AI can generate in one response. Setting a low value makes shorter answers, while a high value allows for longer responses.">
    Max tokens in the answer: kind of cuts off the reply <br> 
 <input id="myTop_p" type="number" style="width:60px"  min="0" max="1" step="0.01" value="0.9" placeholder="0.9" title="Limits the AI's choices to the most likely words. A lower value (e.g., 0.5) makes the response more focused, while a higher value (e.g., 0.9) allows for more variety.">
@@ -256,7 +259,7 @@ It will load from cache if downloaded once. Uses the Web-GPU TransformersJS Deep
 <input id="myEarly_stopping" type="checkbox" checked title="">
    Early_stopping:<br><br>
 
-
+</details>
   
 <input id="myAskButton" type="button" value="Ask Question" onclick="myAskQuestion()"  disabled>
 <input id="myStopButton" type="button" value="Stop Question" onclick="myStopGeneration()" disabled><br><br>
