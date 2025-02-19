@@ -185,10 +185,10 @@ async function myRenderMath() {
 
   myMathText = myMathText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");   //Input: "**Solution:**"; Output: <b>Solution:</b>
 
-  console.log(myMathText)
+//  console.log(myMathText)
 
   let myMathDiv = document.getElementById("myMathOutput");
-  console.log(document.getElementById("myMathOutput").textContent)
+ // console.log(document.getElementById("myMathOutput").textContent)
   myMathDiv.innerHTML = myMathText
 
   await MathJax.typesetPromise([myMathDiv]);
