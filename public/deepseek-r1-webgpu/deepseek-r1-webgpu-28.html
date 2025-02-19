@@ -181,9 +181,9 @@ let myTextarea = document.getElementById('myTextarea01');
 
 async function myRenderMath() {
   let myMathText = document.getElementById("myTextarea01").value;
-  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' <br> '); 
-
-  myMathText = myMathText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");   //Input: "**Solution:**"; Output: <b>Solution:</b>
+  myMathText = myMathText.replace(/^###\s*(.*)$/gm, "<h2>$1</h2>");       // Input:  "### This is a heading";  Output: <h2>This is a heading</h2>
+  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' <br> ');               // line feed to <br>
+  myMathText = myMathText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");         // Input: "**Solution:**"; Output: <b>Solution:</b>
 
 //  console.log(myMathText)
 
