@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TinyML RAG Demo</title>
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0';
+
+    let myRetrieverData = [
+      {
+        title: "Arduino Nano 33 BLE Sense",
+        content: "This board includes a microphone, IMU, and temperature sensor, and is compatible with TensorFlow Lite for microcontrollers.",
+        embedding: [/* short vector placeholder */ 0.1, 0.2, 0.3]
+      },
+      {
+        title: "ESP32-S3",
+        content: "The ESP32-S3 is a low-cost board with Wi-Fi and Bluetooth, suitable for image and audio-based TinyML projects.",
+        embedding: [0.2, 0.1, 0.25]
+      },
+      {
+        title: "XIAO RP2040",
+        content: "This small board by Seeed Studio runs TinyML models and is great for low-power edge AI tasks.",
+        embedding: [0.05, 0.3, 0.2]
+      }
+    ];
+
+    let myQueryModel;
+
+    async function myLoadModel() {
+      myQueryModel = await pipeline('feature-extraction', 'Xenova/distilbert-base-uncased');
+    }
+
+    function myCosineSim(vecA, vecB) {
+      let dot = 0, normA = 0, normB = 0;
+      for (let i = 0; i < vecA.length; i++) {
+        dot += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+      }
+      return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    async function myRunRAG() {
+      let myInput = document.getElementById("myQuery").value;
+      document.getElementById("myOutput").innerHTML = "Thinking...";
+      let myEmbedding = await myQueryModel(myInput);
+      let myVec = myEmbedding[0].slice(0, 3); // Use first 3 dims for quick demo
+
+      let myBest = myRetrieverData.map(d => {
+        return { ...d, score: myCosineSim(d.embedding, myVec) };
+      }).sort((a, b) => b.score - a.score)[0];
+
+      document.getElementById("myOutput").innerHTML =
+        `<b>Relevant Topic:</b> ${myBest.title}<br><br><b>Summary:</b> ${myBest.content}`;
+    }
+
+    myLoadModel();
+  </script>
+</head>
+<body style="font-family:sans-serif;padding:20px">
+  <h3>TinyML Hardware RAG Demo</h3>
+  <p>Ask a question about TinyML hardware:</p>
+  <input id="myQuery" type="text" size="50" value="What board works with TensorFlow Lite?">
+  <input type="button" value="Run RAG" onclick="myRunRAG()">
+  <div id="myOutput" style="margin-top:20px;"></div>
+</body>
+</html>
