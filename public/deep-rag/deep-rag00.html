@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek-R1 Browser LLM with Document Storage</title>
+
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0-alpha.1/es5/tex-mml-chtml.js"></script>
+
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    margin: 20px;
+    background-color: #f4f7f6;
+    color: #333;
+  }
+  h1 {
+    color: #2c3e50;
+  }
+  input[type="text"], textarea, input[type="number"] {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+  button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  button:hover:enabled {
+    opacity: 0.9;
+  }
+  #progress {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+  #myMathOutput {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    min-height: 100px;
+    overflow-x: auto;
+  }
+  details {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #3498db;
+  }
+  .document-item {
+    background-color: #e8f4f8;
+    border: 1px solid #b3e0ff;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .document-item button {
+    padding: 5px 10px;
+    font-size: 0.8em;
+    margin-left: 5px;
+    background-color: #007bff;
+  }
+  .document-item button.delete {
+    background-color: #dc3545;
+  }
+  .document-item button.delete:hover {
+    background-color: #c82333;
+  }
+  .document-item button.copy-to-prompt {
+    background-color: #28a745;
+  }
+  .document-item button.copy-to-prompt:hover {
+    background-color: #218838;
+  }
+</style>
+
+<script type="module">
+import { pipeline, TextStreamer, InterruptableStoppingCriteria } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
+
+// Needed for buttons to call module functions
+window.myLoadModel = myLoadModel
+window.myAskQuestion = myAskQuestion
+window.myStopGeneration = myStopGeneration;
+window.myRenderMath = myRenderMath
+
+// IndexedDB functions
+window.addDocument = addDocument;
+window.loadDocuments = loadDocuments;
+window.deleteDocument = deleteDocument;
+window.clearDocuments = clearDocuments;
+window.copyDocumentToPrompt = copyDocumentToPrompt;
+
+let generator
+let streamer = null;
+let myModel
+let stoppingCriteria = new InterruptableStoppingCriteria();
+let myTimerRender
+
+// IndexedDB variables
+let db;
+const DB_NAME = 'RAGAnalysisDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'documents';
+
+// Function to open the IndexedDB database
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      console.log('IndexedDB opened successfully');
+      resolve(db);
+      // Load default entries if the database is empty
+      loadDefaultEntries();
+    };
+
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+// Function to add a document to IndexedDB
+async function addDocument(text) {
+  if (!db) {
+    db = await openDatabase();
+  }
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const document = { content: text, timestamp: new Date().toISOString() };
+    const request = objectStore.add(document);
+
+    request.onsuccess = () => {
+      console.log('Document added:', document);
+      loadDocuments(); // Refresh the list
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      console.error('Error adding document:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+// Function to load all documents from IndexedDB
+async function loadDocuments() {
+  if (!db) {
+    db = await openDatabase();
+  }
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.getAll();
+
+    request.onsuccess = (event) => {
+      const documents = event.target.result;
+      console.log('Documents loaded:', documents);
+      displayDocuments(documents);
+      resolve(documents);
+    };
+
+    request.onerror = (event) => {
+      console.error('Error loading documents:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+// Function to delete a document from IndexedDB
+async function deleteDocument(id) {
+  if (!db) {
+    db = await openDatabase();
+  }
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.delete(id);
+
+    request.onsuccess = () => {
+      console.log('Document deleted:', id);
+      loadDocuments(); // Refresh the list
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      console.error('Error deleting document:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+// Function to clear all documents from IndexedDB
+async function clearDocuments() {
+  if (!db) {
+    db = await openDatabase();
+  }
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.clear();
+
+    request.onsuccess = () => {
+      console.log('All documents cleared.');
+      loadDocuments(); // Refresh the list (should be empty)
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      console.error('Error clearing documents:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+
+// Load default entries into IndexedDB if empty
+async function loadDefaultEntries() {
+  const existingDocs = await loadDocuments();
+  if (existingDocs.length === 0) {
+    const defaultTexts = [
+      "The quick brown fox jumps over the lazy dog. This is a common pangram used to display all letters of the alphabet.",
+      "Quantum computing is a new type of computing that harnesses the phenomena of quantum mechanics, such as superposition and entanglement, to solve problems that are intractable for classical computers.",
+      "The history of the Internet began in the 1960s with the development of packet switching. The ARPANET, funded by the U.S. Department of Defense, was the first network to implement this technology.",
+      "Photosynthesis is the process used by plants, algae, and certain bacteria to convert light energy into chemical energy that, through cellular respiration, can later be released to fuel the organism's metabolic activities."
+    ];
+
+    for (const text of defaultTexts) {
+      await addDocument(text);
+    }
+    console.log('Default entries added to IndexedDB.');
+  }
+}
+
+// Display documents in the UI
+function displayDocuments(documents) {
+  const container = document.getElementById('documentsList');
+  container.innerHTML = ''; // Clear previous list
+
+  if (documents.length === 0) {
+    container.innerHTML = '<p class="text-gray-500">No documents stored yet. Add some or they will be loaded automatically on first run.</p>';
+    return;
+  }
+
+  documents.forEach(doc => {
+    const div = document.createElement('div');
+    div.className = 'document-item';
+    div.innerHTML = `
+      <span title="${doc.content}">${doc.content.substring(0, 100)}...</span>
+      <div>
+        <button onclick="copyDocumentToPrompt(${doc.id})">Copy to Prompt</button>
+        <button class="delete" onclick="deleteDocument(${doc.id})">Delete</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Copy selected document content to the main prompt textarea
+async function copyDocumentToPrompt(id) {
+  if (!db) {
+    db = await openDatabase();
+  }
+  const transaction = db.transaction([STORE_NAME], 'readonly');
+  const objectStore = transaction.objectStore(STORE_NAME);
+  const request = objectStore.get(id);
+
+  request.onsuccess = (event) => {
+    const doc = event.target.result;
+    if (doc) {
+      document.getElementById('myArea01').value = doc.content + '\n\n' + document.getElementById('myArea01').value;
+      alertMessage('Document copied to prompt successfully!', 'success');
+    }
+  };
+
+  request.onerror = (event) => {
+    console.error('Error fetching document for copy:', event.target.error);
+    alertMessage('Failed to copy document to prompt.', 'error');
+  };
+}
+
+
+// Custom alert message instead of alert()
+function alertMessage(message, type = 'info') {
+  const alertBox = document.createElement('div');
+  alertBox.textContent = message;
+  alertBox.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  `;
+
+  if (type === 'success') {
+    alertBox.style.backgroundColor = '#28a745';
+  } else if (type === 'error') {
+    alertBox.style.backgroundColor = '#dc3545';
+  } else {
+    alertBox.style.backgroundColor = '#007bff';
+  }
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => {
+    alertBox.style.opacity = 1;
+  }, 10); // Small delay to trigger transition
+
+  setTimeout(() => {
+    alertBox.style.opacity = 0;
+    alertBox.addEventListener('transitionend', () => alertBox.remove());
+  }, 3000); // Remove after 3 seconds
+}
+
+// Initialize IndexedDB on page load
+window.onload = async function() {
+  await openDatabase();
+  loadDocuments(); // Load and display existing documents
+};
+
+
+// The rest of your existing ML-related functions
+
+async function myLoadModel() {
+  myModel = document.getElementById('myModelInput').value
+  const progressCallback = (progress) => {
+    const myProg = parseInt(progress.progress);
+    document.getElementById('progress').textContent = `Loading: ${progress.file} at ${myProg}%`;
+  };
+
+  try {
+    generator = await pipeline("text-generation", myModel, { dtype: "q4f16", device: "webgpu", progress_callback: progressCallback });
+    document.getElementById('myLoadButton').disabled = true
+    document.getElementById('myLoadButton').style.backgroundColor = 'gray'
+    document.getElementById('myAskButton').style.backgroundColor = 'lime'
+    document.getElementById('myAskButton').disabled = false
+    document.getElementById('myStopButton').disabled = true
+    document.getElementById('progress').textContent = `Loading: Done!`;
+  } catch (error) {
+    console.error("Failed to load model:", error);
+    document.getElementById('progress').textContent = `Loading failed: ${error.message}`;
+    alertMessage('Model loading failed. Check console for details.', 'error');
+  }
+}
+
+async function myAskQuestion() {
+  window.startTime = performance.now();
+  myTimerRender = setInterval(myRenderMath, 3000);
+  document.getElementById('myTextarea01').value = '';
+  document.getElementById('myAskButton').disabled = true;
+  document.getElementById('myStopButton').disabled = false;
+  let myContent = document.getElementById('myArea01').value;
+  const messages = [{ role: "user", content: myContent }];
+
+  let myTemp = "";
+  let myCount = 0;
+  let myTextarea = document.getElementById('myTextarea01');
+
+  streamer = new TextStreamer(generator.tokenizer, {
+    skip_prompt: true,
+    callback_function: (text) => {
+      myTemp += text;
+      myCount++;
+      if (myCount >= 5) {
+          myTextarea.value += myTemp;
+          myTemp = "";
+          myCount = 0;
+          if (document.activeElement !== myTextarea) {
+              myTextarea.scrollTop = myTextarea.scrollHeight;
+          }
+      }
+
+      const currentTime = performance.now();
+      const elapsedTime = (currentTime - window.startTime) / 1000;
+      const generatedTokens = myTextarea.value.length; // Approximate token count
+      const tokensPerSecond = generatedTokens / elapsedTime;
+      const myMaxT = document.getElementById('myMaxTokens').value; // Need to get this here for progress calc
+      const progress = myMaxT > 0 ? parseInt((generatedTokens * 100) / myMaxT) : 0;
+      document.getElementById('progress').textContent = `Answer progress: ${progress}%, Tokens per second: ${tokensPerSecond.toFixed(0)}, elapsed time: ${elapsedTime.toFixed(0)} seconds`;
+
+      if (progress >= 100) {
+        window.startTime = null;
+      }
+    },
+  });
+
+  const myMaxT = document.getElementById('myMaxTokens').value;
+  const myDo_sample = document.getElementById('myDo_sample').checked; // Use .checked for checkbox
+  const myTop_p = parseFloat(document.getElementById('myTop_p').value);
+  const myTemperature = parseFloat(document.getElementById('myTemperature').value);
+  const myChain_of_thought = document.getElementById('myChain_of_thought').checked; // Use .checked
+  const myTop_k = parseInt(document.getElementById('myTop_k').value);
+  const myMin_length = parseInt(document.getElementById('myMin_length').value);
+  const myRepetition_penalty = parseFloat(document.getElementById('myRepetition_penalty').value);
+  const myLength_penalty = parseFloat(document.getElementById('myLength_penalty').value);
+  const myEarly_stopping = document.getElementById('myEarly_stopping').checked; // Use .checked
+
+  stoppingCriteria = new InterruptableStoppingCriteria();
+
+  try {
+    const output = await generator(messages, {
+      max_new_tokens: myMaxT,
+      do_sample: myDo_sample,
+      top_p: myTop_p,
+      temperature: myTemperature,
+      top_k: myTop_k,
+      min_length: myMin_length,
+      repetition_penalty: myRepetition_penalty,
+      length_penalty: myLength_penalty,
+      early_stopping: myEarly_stopping,
+      num_return_sequences: 1,
+      streamer,
+      chain_of_thought: myChain_of_thought,
+      stopping_criteria: stoppingCriteria,
+    });
+
+    if (!stoppingCriteria.interrupted) {
+      let fullReply = output[0].generated_text.at(-1).content;
+      // Added `replace(/<endoftext>/g, "")` to clean up some model outputs.
+      let myReply = fullReply.replace(/<think>/g, "").replace(/<\/think>/g, "\r\n\r\nResponse: ").replace(/```/g, "").replace(/<endoftext>/g, "");
+      document.getElementById('myTextarea01').value = `Asking: ${myContent}\r\n\r\nAnswer: ${myReply}`;
+    }
+  } catch (error) {
+    if (stoppingCriteria.interrupted) {
+      console.log('Generation was stopped.');
+      alertMessage('Generation stopped.', 'info');
+    } else {
+      console.error('Error during generation:', error);
+      alertMessage('Error during generation. See console.', 'error');
+    }
+  } finally {
+    clearInterval(myTimerRender)
+    myRenderMath()
+    document.getElementById('myAskButton').disabled = false;
+    document.getElementById('myStopButton').disabled = true;
+  }
+}
+
+async function myRenderMath() {
+  let myMathText = document.getElementById("myTextarea01").value;
+  myMathText = myMathText.replace(/^###\s*(.*)$/gm, "<h2>$1</h2>");
+  myMathText = myMathText.replace(/\r\n|\n|\r/g, ' <br> ');
+  myMathText = myMathText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+  let myMathDiv = document.getElementById("myMathOutput");
+  myMathDiv.innerHTML = myMathText
+
+  await MathJax.typesetPromise([myMathDiv]);
+}
+
+function myStopGeneration() {
+  clearInterval(myTimerRender)
+  stoppingCriteria.interrupt();
+  document.getElementById('progress').textContent = 'Generation stopped.';
+  document.getElementById('myAskButton').disabled = false;
+  document.getElementById('myStopButton').disabled = true;
+  alertMessage('Generation stopped!', 'info');
+}
+
+</script>
+</head>
+<body>
+<h1>DeepSeek-R1-webGPU single HTML/Javascript page with IndexedDB Document Storage</h1>
+
+<p>
+  Open the console (Shift-Ctrl-I) for more info. This single HTML/Javascript Browser LLM is too big for your cell phone. If you don't want to completely download
+  <a href="[https://huggingface.co/onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX](https://huggingface.co/onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX)" target="_blank">
+  huggingface.co/onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX </a> then you should probably close this page.
+</p>
+<p>
+  It will load from cache if downloaded once. Uses the Web-GPU TransformersJS DeepseekR1 model or other models:<br>
+  <input id="myModelInput" type="text" size="60" value="onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX">
+</p>
+
+<button id="myLoadButton" style="background-color:lime" onclick="myLoadModel()">Load Model</button>
+<span class="text-gray-600">Data warning ~1.4 GB saved to cache</span><br><br>
+
+<textarea id="myArea01" rows="5" cols="70" placeholder="Ask your question here">Solve the equation: x^2 - 3x + 2 = 0</textarea><br>
+
+<details closed>
+  <summary>Click for hyperparameters which may or may not work</summary>
+  <label for="myMaxTokens">Max tokens in the answer:</label>
+  <input id="myMaxTokens" type="number" style="width:60px" value="512" placeholder="512" title="The maximum number of words or characters the AI can generate in one response. Setting a low value makes shorter answers, while a high value allows for longer responses.">
+  <br>
+  <label for="myTop_p">Top_p:</label>
+  <input id="myTop_p" type="number" style="width:60px" min="0" max="1" step="0.01" value="0.9" placeholder="0.9" title="Limits the AI's choices to the most likely words. A lower value (e.g., 0.5) makes the response more focused, while a higher value (e.g., 0.9) allows for more variety.">
+  <span>closer to zero more focused, closer to 1 more variety</span><br>
+  <label for="myTemperature">Temperature:</label>
+  <input id="myTemperature" type="number" style="width:60px" min="0" max="1" step="0.01" value="0.7" placeholder="0.7" title="Controls how creative the AI is. A low value (e.g., 0.2) makes responses more predictable, while a high value (e.g., 1.0) makes them more random and diverse.">
+  <span>Close to 0 more predictable, closer to 1 more diverse</span><br><br>
+
+  <label for="myTop_k">Top_k:</label>
+  <input id="myTop_k" type="number" style="width:60px" min="0" max="300" step="1" value="50" placeholder="50" title="Considers only the top K most likely words when sampling. A lower K makes the AI more focused, a higher K allows for more diversity.">
+  <br>
+  <label for="myMin_length">Min_length:</label>
+  <input id="myMin_length" type="number" style="width:60px" min="0" max="10000" step="1" value="20" placeholder="20" title="Ensures the generated response has at least this many tokens.">
+  <br>
+  <label for="myRepetition_penalty">Repetition_penalty:</label>
+  <input id="myRepetition_penalty" type="number" style="width:60px" min="0" max="10" step="0.1" value="1.2" placeholder="1.2" title="Discourages the AI from repeating words or phrases too often. Higher values reduce repetition.">
+  <br>
+  <label for="myLength_penalty">Length_penalty:</label>
+  <input id="myLength_penalty" type="number" style="width:60px" min="0" max="10" step="0.1" value="1.5" placeholder="1.5" title="Influences the length of the generated response. Values >1 encourage longer outputs, <1 encourage shorter.">
+  <br><br>
+
+  <input id="myDo_sample" type="checkbox" checked title="When turned on, the AI picks words more randomly instead of always choosing the most likely option. This makes responses more varied and creative. If off, the AI sticks to the safest choices.">
+  <label for="myDo_sample">Do_sample: when selected, picks and considers more token options making it varied and creative, not selected keeps safest token</label><br>
+  <input id="myChain_of_thought" type="checkbox" checked title="Encourages the AI to explain its reasoning step by step, making answers more detailed and logical. Useful for math, coding, and problem-solving.">
+  <label for="myChain_of_thought">Chain_of_thought: AI explains more about its token creation process.</label><br>
+  <input id="myEarly_stopping" type="checkbox" checked title="Stops generation early if certain conditions (like end-of-sentence tokens) are met, even if max_new_tokens hasn't been reached.">
+  <label for="myEarly_stopping">Early_stopping:</label><br><br>
+</details><br>
+
+<button id="myAskButton" onclick="myAskQuestion()" disabled>Ask Question</button>
+<button id="myStopButton" onclick="myStopGeneration()" disabled>Stop Question</button><br><br>
+<div id="progress">Loading progress: 0%</div>
+<br><br>
+
+<textarea id="myTextarea01" rows="20" style="width:100%;" placeholder="Reply Goes here" READONLY></textarea><br><br>
+
+<h3>Rendered Output:</h3>
+<div id="myMathOutput" style="font-size: 1.5em; border: 1px solid black; padding: 10px;">
+  ...
+</div><br>
+
+<button onclick="myRenderMath()">Render Math</button>
+<button onclick="{
+   document.getElementById('myMathOutput').select()
+   document.execCommand('copy') // Copy to clipboard
+   alertMessage('Rendered output copied to clipboard!', 'success');
+}">Copy Rendered</button>
+
+<button onclick="{
+   document.getElementById('myTextarea01').select()
+   document.execCommand('copy') // Copy to clipboard
+   document.getElementById('myKeeparea01').value += '\r\n\r\n'+document.getElementById('myTextarea01').value;
+   alertMessage('Regular text copied to clipboard!', 'success');
+}">Copy Regular</button>
+<button onclick="{
+   document.getElementById('myKeeparea01').value = '';
+   alertMessage('Copied history cleared!', 'info');
+}">Clear Copied History</button><br>
+
+<textarea id="myKeeparea01" rows="5" style="width:100%;" placeholder="Copy here only when wished" READONLY></textarea><br><br><br>
+
+<h2>Local Document Storage (IndexedDB)</h2>
+<p>
+  Store text documents locally in your browser. These documents can be copied into the prompt to provide context to the LLM.
+  This is the first step towards a RAG system, but note that automated semantic retrieval (which requires an embedding model and vector search)
+  is not included here.
+</p>
+<div>
+  <textarea id="newDocumentText" rows="3" style="width: calc(100% - 110px); display: inline-block;" placeholder="Enter new document text here..."></textarea>
+  <button style="width: 100px; vertical-align: top; margin-left: 5px; background-color: #007bff;" onclick="addDocument(document.getElementById('newDocumentText').value); document.getElementById('newDocumentText').value=''">Add Document</button>
+</div>
+<button style="background-color: #dc3545;" onclick="clearDocuments()">Clear All Documents</button><br><br>
+
+<h3>Stored Documents:</h3>
+<div id="documentsList" style="border: 1px solid #ddd; padding: 10px; min-height: 100px; border-radius: 8px;">
+  Loading documents...
+</div>
+<br><br>
+
+Use at your own risk, by <a href="[https://www.linkedin.com/in/jeremy-ellis-4237a9bb/](https://www.linkedin.com/in/jeremy-ellis-4237a9bb/)" target="_blank">Jeremy Ellis LinkedIn</a><br>
+Github index at <a href="[https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html](https://hpssjellis.github.io/my-examples-of-ai-agents/public/index.html)" target="_blank">hpssjellis.github.io/my-examples-of-ai-agents/public/index.html</a><br>
+My transformersjs github where the work was done <a href="[https://github.com/hpssjellis/my-examples-of-transformersJS](https://github.com/hpssjellis/my-examples-of-transformersJS)" target="_blank">[https://github.com/hpssjellis/my-examples-of-transformersJS](https://github.com/hpssjellis/my-examples-of-transformersJS)</a>
+My Github <a href="[https://github.com/hpssjellis](https://github.com/hpssjellis)" target="_blank">Profile</a><br>
+
+</body>
+</html>
