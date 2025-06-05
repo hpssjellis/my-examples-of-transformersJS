@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple RAG Demo</title>
+    <style>
+        /* Minimal CSS for a clean look */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff; /* Blue button */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            color: #007bff;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            display: none; /* Hidden by default */
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-top: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr 1fr; /* Two columns on larger screens */
+            }
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .docs-container, .answer-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9e9e9;
+            min-height: 150px; /* Ensure consistent height */
+            overflow-y: auto;
+            max-height: 400px; /* Limit height for scrollable content */
+        }
+
+        .doc-item {
+            background-color: #e6f7ff; /* Light blue for document items */
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #cceeff;
+        }
+
+        .doc-item h3 {
+            font-size: 1.1em;
+            color: #0056b3; /* Darker blue for doc title */
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .doc-item p {
+            font-size: 0.9em;
+            color: #444;
+            line-height: 1.4;
+            max-height: 60px; /* Limit height of content */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .placeholder-text {
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            padding-top: 20px;
+        }
+
+        .error-message {
+            color: #dc3545; /* Red for error messages */
+            font-weight: bold;
+            text-align: center;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple RAG Demo</h1>
+
+        <div>
+            <label for="queryInput">Your Query:</label>
+            <textarea id="queryInput" placeholder="e.g., What are the benefits of exercise?"></textarea>
+            <button id="processQuery">
+                Retrieve & Generate Answer
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">
+            Processing... Please wait.
+        </div>
+
+        <div class="results-grid">
+            <!-- Retrieved Documents Section -->
+            <div>
+                <h2 class="section-title">Retrieved Documents:</h2>
+                <div id="retrievedDocs" class="docs-container">
+                    <p class="placeholder-text">No documents retrieved yet.</p>
+                </div>
+            </div>
+
+            <!-- Generated Answer Section -->
+            <div>
+                <h2 class="section-title">Generated Answer:</h2>
+                <div id="generatedAnswer" class="answer-container">
+                    <p class="placeholder-text">Answer will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dummy knowledge base for demonstration purposes
+        const knowledgeBase = [
+            {
+                id: 'doc1',
+                title: 'Benefits of Regular Exercise',
+                content: 'Regular exercise has numerous health benefits, including improved cardiovascular health, weight management, stronger bones and muscles, better sleep quality, and reduced risk of chronic diseases like diabetes and heart disease. It also boosts mood and reduces stress. Aim for at least 30 minutes of moderate-intensity exercise most days of the week.'
+            },
+            {
+                id: 'doc2',
+                title: 'Introduction to Artificial Intelligence',
+                content: 'Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think and learn. Key areas of AI include machine learning, deep learning, natural language processing (NLP), computer vision, and robotics. AI is transforming various industries, from healthcare to finance.'
+            },
+            {
+                id: 'doc3',
+                title: 'Healthy Eating Habits',
+                content: 'Adopting healthy eating habits is crucial for overall well-being. This includes consuming a balanced diet rich in fruits, vegetables, whole grains, and lean proteins. Limiting processed foods, sugary drinks, and unhealthy fats is also important. Proper hydration by drinking plenty of water is essential.'
+            },
+            {
+                id: 'doc4',
+                title: 'Understanding Machine Learning',
+                content: 'Machine Learning (ML) is a subset of Artificial Intelligence that enables systems to learn from data without being explicitly programmed. It involves algorithms that build a model from sample data, known as "training data," in order to make predictions or decisions without being explicitly programmed to perform the task. Types include supervised, unsupervised, and reinforcement learning.'
+            },
+            {
+                id: 'doc5',
+                title: 'Impact of Climate Change',
+                content: 'Climate change refers to long-term shifts in temperatures and weather patterns. These shifts may be natural, but since the 1800s, human activities have been the main driver of climate change, primarily due to the burning of fossil fuels (like coal, oil, and gas) which produces heat-trapping gases. Its impacts include rising sea levels, more extreme weather events, and disruptions to ecosystems.'
+            },
+            {
+                id: 'doc6',
+                title: 'The Role of Natural Language Processing (NLP)',
+                content: 'Natural Language Processing (NLP) is a branch of AI that deals with the interaction between computers and human language. It enables computers to understand, interpret, and generate human language. Applications include sentiment analysis, language translation, spam detection, and chatbots. NLP is critical for effective communication between humans and machines.'
+            }
+        ];
+
+        // Get DOM elements
+        const queryInput = document.getElementById('queryInput');
+        const processQueryButton = document.getElementById('processQuery');
+        const retrievedDocsDiv = document.getElementById('retrievedDocs');
+        const generatedAnswerDiv = document.getElementById('generatedAnswer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        /**
+         * Simulates retrieval of documents based on query keywords.
+         * For a real RAG system, this would involve a vector database query,
+         * search engine, or other document retrieval mechanism.
+         * @param {string} query - The user's query.
+         * @returns {Array<Object>} An array of "relevant" document objects.
+         */
+        function retrieveDocuments(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            // Simple keyword matching for demo purposes
+            return knowledgeBase.filter(doc =>
+                doc.title.toLowerCase().includes(lowerCaseQuery) ||
+                doc.content.toLowerCase().includes(lowerCaseQuery) ||
+                lowerCaseQuery.split(' ').some(keyword => doc.content.toLowerCase().includes(keyword))
+            );
+        }
+
+        /**
+         * Simulates the generation of an answer based on the query and retrieved documents.
+         * For a real RAG system, this would involve sending the query and context
+         * to a large language model (LLM) for generation.
+         * @param {string} query - The user's original query.
+         * @param {Array<Object>} retrievedDocuments - Documents retrieved by the `retrieveDocuments` function.
+         * @returns {string} The simulated generated answer.
+         */
+        async function generateAnswer(query, retrievedDocuments) {
+            let context = '';
+            if (retrievedDocuments.length > 0) {
+                context = retrievedDocuments.map(doc => `Title: ${doc.title}\nContent: ${doc.content}`).join('\n\n---\n\n');
+            }
+
+            // Simulate LLM call using the Gemini API (gemini-2.0-flash)
+            const prompt = `Based on the following information, please answer the query: "${query}".
+            
+            Information:
+            ${context || 'No specific relevant information was found in the knowledge base.'}
+            
+            If the information provided is not sufficient to fully answer the question, state that.`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+
+            const apiKey = ""; // API Key will be provided by the environment, leave empty
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    return text;
+                } else {
+                    console.error("Gemini API response structure unexpected:", result);
+                    return "Could not generate an answer. The LLM response was empty or malformed.";
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return "Failed to generate an answer due to an API error.";
+            }
+        }
+
+        // Event listener for the button click
+        processQueryButton.addEventListener('click', async () => {
+            const query = queryInput.value.trim();
+            if (!query) {
+                generatedAnswerDiv.innerHTML = '<p class="error-message">Please enter a query to proceed.</p>';
+                retrievedDocsDiv.innerHTML = '<p class="placeholder-text">No documents retrieved yet.</p>';
+                return;
+            }
+
+            // Clear previous results and show loading indicator
+            retrievedDocsDiv.innerHTML = '';
+            generatedAnswerDiv.innerHTML = '<p class="placeholder-text">Generating answer...</p>';
+            loadingIndicator.style.display = 'block'; // Show loading indicator
+            processQueryButton.disabled = true; // Disable button during processing
+
+            // Step 1: Simulate Retrieval
+            const retrievedDocuments = await new Promise(resolve => setTimeout(() => {
+                const docs = retrieveDocuments(query);
+                resolve(docs);
+            }, 500)); // Simulate network delay
+
+            // Display retrieved documents
+            if (retrievedDocuments.length > 0) {
+                retrievedDocuments.forEach(doc => {
+                    const docElement = document.createElement('div');
+                    docElement.className = 'doc-item'; // Use the new class name
+                    docElement.innerHTML = `
+                        <h3>${doc.title}</h3>
+                        <p>${doc.content}</p>
+                    `;
+                    retrievedDocsDiv.appendChild(docElement);
+                });
+            } else {
+                retrievedDocsDiv.innerHTML = '<p class="placeholder-text">No relevant documents found in the knowledge base.</p>';
+            }
+
+            // Step 2: Simulate Generation (using the Gemini API)
+            const generatedAnswer = await generateAnswer(query, retrievedDocuments);
+
+            // Display generated answer
+            generatedAnswerDiv.innerHTML = `<p>${generatedAnswer}</p>`;
+
+            // Hide loading indicator and enable button
+            loadingIndicator.style.display = 'none'; // Hide loading indicator
+            processQueryButton.disabled = false;
+        });
+    </script>
+</body>
+</html>
