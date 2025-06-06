@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Sequential Entry Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .stored-items {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .stored-items h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .stored-item {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            word-wrap: break-word; /* Ensure long text wraps */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-button {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto; /* Override full width */
+            margin-top: 0; /* Remove top margin */
+            margin-left: 10px;
+        }
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+        .message-box {
+            background-color: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffecb5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
+        /* Tailwind overrides for specific elements to ensure minimal styling */
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .bg-white { background-color: #fff; }
+        .p-6 { padding: 1.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .w-full { width: 100%; }
+        .text-gray-700 { color: #4a5568; }
+        .text-sm { font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+    <div class="container rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">IndexedDB Item List</h1>
+
+        <!-- Single Entry Section for adding new items -->
+        <div class="input-group">
+            <label for="newItemInput" class="text-gray-700 text-sm">New Item Text:</label>
+            <input type="text" id="newItemInput" placeholder="Enter text for new item">
+        </div>
+        <button id="saveItemButton" class="rounded-md">Add Item</button>
+
+        <div id="messageBox" class="message-box"></div>
+
+        <div class="stored-items">
+            <h2 class="text-xl font-semibold text-gray-800">All Stored Items:</h2>
+            <div id="displayArea">
+                <!-- Stored items will be displayed here -->
+                <p>No items stored yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const newItemInput = document.getElementById('newItemInput');
+        const saveItemButton = document.getElementById('saveItemButton');
+        const displayArea = document.getElementById('displayArea');
+        const messageBox = document.getElementById('messageBox');
+
+        // IndexedDB variables
+        const DB_NAME = 'MyTextDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'textEntries';
+        const COUNTER_KEY = '__nextItemIdCounter'; // Key to store our persistent counter
+        let db; // Variable to hold the database instance
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            switch (type) {
+                case 'success':
+                    messageBox.style.backgroundColor = '#d4edda';
+                    messageBox.style.color = '#155724';
+                    messageBox.style.borderColor = '#c3e6cb';
+                    break;
+                case 'error':
+                    messageBox.style.backgroundColor = '#f8d7da';
+                    messageBox.style.color = '#721c24';
+                    messageBox.style.borderColor = '#f5c6cb';
+                    break;
+                case 'info':
+                default:
+                    messageBox.style.backgroundColor = '#fff3cd';
+                    messageBox.style.color = '#664d03';
+                    messageBox.style.borderColor = '#ffecb5';
+                    break;
+            }
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000); // Hide message after 3 seconds
+        }
+
+        // Function to open the IndexedDB database
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                console.log(`Attempting to open IndexedDB: ${DB_NAME} (Version: ${DB_VERSION})`);
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.errorCode, event.target.error);
+                    showMessage("Error opening database: " + event.target.error?.message || event.target.errorCode, 'error');
+                    reject('Database error: ' + (event.target.error?.message || event.target.errorCode));
+                };
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    console.log(`onupgradeneeded triggered. Old version: ${event.oldVersion}, New version: ${event.newVersion}`);
+
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        console.log(`Object store '${STORE_NAME}' created.`);
+                        // Initialize the counter when the object store is first created
+                        objectStore.add({ id: COUNTER_KEY, value: 1 });
+                        console.log(`Initialized '${COUNTER_KEY}' to 1.`);
+                    } else {
+                        console.log(`Object store '${STORE_NAME}' already exists.`);
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log("Database opened successfully. Version:", db.version);
+                    if (event.oldVersion === 0) {
+                        showMessage("Database created and opened.", 'success');
+                    } else if (event.oldVersion < DB_VERSION) {
+                        showMessage("Database upgraded and opened.", 'success');
+                    } else {
+                        showMessage("Database opened successfully.", 'info');
+                    }
+                    resolve(db);
+                };
+            });
+        }
+
+        // Function to save a new item to IndexedDB with a sequential ID
+        async function saveNewItem() {
+            console.log("Attempting to add new item...");
+            const value = newItemInput.value.trim();
+
+            if (value === "") {
+                showMessage("Please enter some text for the new item.", 'info');
+                return;
+            }
+
+            try {
+                if (!db) {
+                    console.log("Database not yet open, opening now for save operation...");
+                    db = await openDB();
+                }
+
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    console.error(`Object store '${STORE_NAME}' does not exist.`);
+                    showMessage(`Error: Object store '${STORE_NAME}' not found. Please refresh.`, 'error');
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                console.log("IndexedDB transaction created (readwrite) for new item.");
+
+                // Get the current counter value
+                const counterRequest = objectStore.get(COUNTER_KEY);
+                counterRequest.onsuccess = () => {
+                    let nextIdValue = 1;
+                    if (counterRequest.result) {
+                        nextIdValue = counterRequest.result.value;
+                    }
+
+                    const newId = 'item_' + nextIdValue; // e.g., 'item_1', 'item_2'
+                    console.log(`Saving new item: ID="${newId}", Value="${value}"`);
+
+                    // Add the new item
+                    objectStore.put({ id: newId, value: value });
+
+                    // Increment and update the counter for the next item
+                    objectStore.put({ id: COUNTER_KEY, value: nextIdValue + 1 });
+
+                    transaction.oncomplete = () => {
+                        console.log("New item saved to IndexedDB. Transaction complete.");
+                        showMessage("Item added successfully!", 'success');
+                        newItemInput.value = ''; // Clear the input field
+                        displayEntries(); // Refresh display
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Transaction error (new item):", event.target.error);
+                        showMessage("Error adding new item: " + event.target.error?.message || 'Unknown error', 'error');
+                    };
+                };
+
+                counterRequest.onerror = (event) => {
+                    console.error("Error retrieving counter:", event.target.error);
+                    showMessage("Error adding new item: Could not get counter.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to add new item (outer catch):", error);
+                showMessage("Failed to add new item due to database setup issue.", 'error');
+            }
+        }
+
+        // Function to delete an entry by its ID
+        async function deleteEntry(id) {
+            console.log(`Attempting to delete entry with ID: ${id}`);
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    console.error(`Object store '${STORE_NAME}' does not exist.`);
+                    showMessage(`Error: Object store '${STORE_NAME}' not found. Please refresh.`, 'error');
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+
+                const request = objectStore.delete(id);
+
+                request.onsuccess = () => {
+                    console.log(`Entry with ID '${id}' deleted successfully.`);
+                    showMessage("Entry deleted successfully!", 'success');
+                    displayEntries(); // Refresh display
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error deleting entry:", event.target.error);
+                    showMessage("Error deleting entry: " + event.target.error?.message || 'Unknown error', 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to delete entry:", error);
+                showMessage("Failed to delete entry due to database error.", 'error');
+            }
+        }
+
+        // Function to display all entries from IndexedDB
+        async function displayEntries() {
+            console.log("Attempting to display all entries...");
+            displayArea.innerHTML = ''; // Clear previous content
+
+            try {
+                if (!db) {
+                    console.log("Database not yet open for display, opening now...");
+                    db = await openDB();
+                }
+
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    console.error(`Object store '${STORE_NAME}' does not exist.`);
+                    displayArea.innerHTML = '<p>Database not ready or object store not found. Please try refreshing.</p>';
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                console.log("IndexedDB transaction created (readonly) for displaying all entries.");
+
+                // Use getAll() to retrieve all objects from the object store, excluding our counter
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    console.log("All retrieved items:", allItems);
+
+                    let hasContent = false;
+
+                    // Filter out the counter key and then display the items
+                    const itemsToDisplay = allItems.filter(item => item.id !== COUNTER_KEY);
+
+                    if (itemsToDisplay.length > 0) {
+                        itemsToDisplay.forEach(item => {
+                            if (item && item.value !== null) {
+                                const p = document.createElement('p');
+                                p.classList.add('stored-item');
+                                // Display format: "Item #X: 'Value'"
+                                // Extract the number from 'item_X' ID for display
+                                const itemNumber = item.id.split('_')[1];
+                                p.textContent = `Item #${itemNumber}: "${item.value}"`;
+
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.textContent = 'Delete';
+                                deleteBtn.classList.add('delete-button');
+                                deleteBtn.onclick = () => deleteEntry(item.id);
+                                p.appendChild(deleteBtn);
+
+                                displayArea.appendChild(p);
+                                hasContent = true;
+                            }
+                        });
+                    }
+
+                    if (!hasContent) {
+                        const p = document.createElement('p');
+                        p.textContent = 'No items stored yet.';
+                        displayArea.appendChild(p);
+                    }
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving all items:", event.target.error);
+                    showMessage("Error retrieving items from database.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to display entries (outer catch):", error);
+                showMessage("Failed to display entries due to database error.", 'error');
+            }
+        }
+
+        // Add event listener to the save button
+        saveItemButton.addEventListener('click', saveNewItem);
+
+        // Open the database and display entries when the page loads
+        window.onload = async () => {
+            try {
+                db = await openDB();
+                displayEntries();
+            } catch (error) {
+                console.error("Initialization failed during window.onload:", error);
+            }
+        };
+    </script>
+</body>
+</html>
