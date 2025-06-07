@@ -1,0 +1,494 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Text Chunks for Embedding</title>
+    <!-- Removed Tailwind CSS script -->
+   
+</head>
+<body>
+    <div class="main-content">
+        <h1>Text Chunks for Embedding</h1>
+
+        <div class="stats" id="statsArea">
+            <strong>Database Stats:</strong> Loading...
+        </div>
+
+        <div class="model-status" id="modelStatus">
+            Loading embedding model...
+        </div>
+
+        <!-- Text Entry Section -->
+        <div class="input-group">
+            <label for="textInput">Text Content:</label>
+            <textarea id="textInput" placeholder="Enter text to be chunked and embedded..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="sourceInput">Source (optional):</label>
+            <input type="text" id="sourceInput" placeholder="e.g., document.pdf, chapter 1, etc.">
+        </div>
+
+        <div class="input-group">
+            <label for="chunkSizeInput">Chunk Size (characters):</label>
+            <input type="number" id="chunkSizeInput" value="500" min="100" max="2000" placeholder="500">
+        </div>
+
+        <div class="input-group">
+            <label for="overlapInput">Overlap (characters):</label>
+            <input type="number" id="overlapInput" value="50" min="0" max="200" placeholder="50">
+        </div>
+
+        <div class="input-group">
+            <label>
+                <input type="checkbox" id="autoChunkCheckbox" checked>
+                Auto-chunk large text (splits text longer than chunk size)
+            </label>
+        </div>
+
+        <button id="saveChunkButton">Process & Add Text</button>
+        <button id="generateEmbeddingsButton" class="generate-embeddings-button">Generate Embeddings</button>
+
+        <div id="messageBox" class="message-box"></div>
+
+        <div class="stored-items">
+            <h2>Stored Text Chunks:</h2>
+            <div id="displayArea">
+                <p>No text chunks stored yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the pipeline function from Transformer.js
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+        // Get references to HTML elements
+        const textInput = document.getElementById('textInput');
+        const sourceInput = document.getElementById('sourceInput');
+        const saveChunkButton = document.getElementById('saveChunkButton');
+        const displayArea = document.getElementById('displayArea');
+        const messageBox = document.getElementById('messageBox');
+        const statsArea = document.getElementById('statsArea');
+        const modelStatus = document.getElementById('modelStatus');
+        const generateEmbeddingsButton = document.getElementById('generateEmbeddingsButton');
+
+        // IndexedDB variables
+        const DB_NAME = 'EmbeddingTextDB';
+        const DB_VERSION = 6; // Increment DB version for schema changes and potential fixes
+        const STORE_NAME = 'textChunks';
+        const COUNTER_KEY = '__nextChunkIdCounter';
+        let db;
+
+        // Transformer.js model variables
+        let embeddingPipeline = null;
+        // Using a small, efficient model for browser demonstration
+        const embeddingModelName = 'Xenova/all-MiniLM-L6-v2';
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            switch (type) {
+                case 'success':
+                    messageBox.style.backgroundColor = '#d4edda';
+                    messageBox.style.color = '#155724';
+                    messageBox.style.borderColor = '#c3e6cb';
+                    break;
+                case 'error':
+                    messageBox.style.backgroundColor = '#f8d7da';
+                    messageBox.style.color = '#721c24';
+                    messageBox.style.borderColor = '#f5c6cb';
+                    break;
+                case 'info':
+                default:
+                    messageBox.style.backgroundColor = '#fff3cd';
+                    messageBox.style.color = '#664d03';
+                    messageBox.style.borderColor = '#ffecb5';
+                    break;
+            }
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to update stats display
+        async function updateStats() {
+            try {
+                if (!db) return;
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+                    const totalChars = chunks.reduce((sum, chunk) => sum + (chunk.content?.length || 0), 0);
+                    const embeddedChunks = chunks.filter(chunk => chunk.isEmbedded).length;
+
+                    statsArea.innerHTML = `
+                        <strong>Database Stats:</strong>
+                        ${chunks.length} text chunks |
+                        ${totalChars} total characters |
+                        Average: ${chunks.length > 0 ? Math.round(totalChars / chunks.length) : 0} chars per chunk |
+                        Embedded: ${embeddedChunks} / ${chunks.length}
+                    `;
+                };
+            } catch (error) {
+                console.error("Error updating stats:", error);
+            }
+        }
+
+        // Function to open the IndexedDB database
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                console.log(`Opening IndexedDB: ${DB_NAME} (Version: ${DB_VERSION})`);
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.error);
+                    showMessage("Error opening database: " + event.target.error?.message, 'error');
+                    reject('Database error: ' + event.target.error?.message);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    console.log(`Database upgrade needed. Old version: ${event.oldVersion}`);
+
+                    let objectStore;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        console.log(`Object store '${STORE_NAME}' created.`);
+
+                        // Initialize the counter if new store
+                        objectStore.add({ id: COUNTER_KEY, value: 1 });
+                    } else {
+                        // If store already exists, get it for modifications
+                        objectStore = event.target.transaction.objectStore(STORE_NAME);
+                    }
+
+                    // Create/update indexes for efficient querying
+                    if (!objectStore.indexNames.contains('timestamp')) {
+                        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('source')) {
+                        objectStore.createIndex('source', 'source', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('wordCount')) {
+                        objectStore.createIndex('wordCount', 'wordCount', { unique: false });
+                    }
+                    // Add new indexes for embedding status and model
+                    if (!objectStore.indexNames.contains('isEmbedded')) {
+                        objectStore.createIndex('isEmbedded', 'isEmbedded', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('embeddingModel')) {
+                        objectStore.createIndex('embeddingModel', 'embeddingModel', { unique: false });
+                    }
+
+                    console.log(`Initialized/updated indexes.`);
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log("Database opened successfully.");
+                    showMessage("Database ready for text chunks.", 'success');
+                    resolve(db);
+                };
+            });
+        }
+
+        // Function to save a new text chunk
+        async function saveNewChunk() {
+            console.log("Adding new text chunk...");
+            const content = textInput.value.trim();
+            const source = sourceInput.value.trim() || 'Unknown';
+
+            if (content === "") {
+                showMessage("Please enter some text content.", 'info');
+                return;
+            }
+
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+
+                // Get the current counter value
+                const counterRequest = objectStore.get(COUNTER_KEY);
+                counterRequest.onsuccess = () => {
+                    let nextIdValue = 1;
+                    if (counterRequest.result) {
+                        nextIdValue = counterRequest.result.value;
+                    }
+
+                    const chunkId = 'chunk_' + nextIdValue;
+
+                    // Create text chunk object ready for embedding
+                    const textChunk = {
+                        id: chunkId,
+                        content: content,
+                        source: source,
+                        timestamp: new Date().toISOString(),
+                        wordCount: content.split(/\s+/).length,
+                        charCount: content.length,
+                        embedding: null,         // New field: will store the embedding vector
+                        embeddingModel: null,    // New field: will store the model name used
+                        isEmbedded: false        // New field: status of embedding
+                    };
+
+                    console.log(`Saving text chunk: ID="${chunkId}"`);
+
+                    // Add the new chunk
+                    objectStore.put(textChunk);
+
+                    // Update counter
+                    objectStore.put({ id: COUNTER_KEY, value: nextIdValue + 1 });
+
+                    transaction.oncomplete = () => {
+                        console.log("Text chunk saved successfully.");
+                        showMessage("Text chunk added successfully!", 'success');
+                        textInput.value = '';
+                        sourceInput.value = '';
+                        displayChunks();
+                        updateStats();
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Transaction error:", event.target.error);
+                        showMessage("Error adding text chunk: " + event.target.error?.message, 'error');
+                    };
+                };
+
+            } catch (error) {
+                console.error("Failed to add text chunk:", error);
+                showMessage("Failed to add text chunk due to database error.", 'error');
+            }
+        }
+
+        // Function to delete a chunk by its ID
+        async function deleteChunk(id) {
+            console.log(`Deleting chunk with ID: ${id}`);
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const request = objectStore.delete(id);
+
+                request.onsuccess = () => {
+                    console.log(`Chunk '${id}' deleted successfully.`);
+                    showMessage("Text chunk deleted successfully!", 'success');
+                    displayChunks();
+                    updateStats();
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error deleting chunk:", event.target.error);
+                    showMessage("Error deleting chunk: " + event.target.error?.message, 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to delete chunk:", error);
+                showMessage("Failed to delete chunk due to database error.", 'error');
+            }
+        }
+
+        // Function to display all text chunks
+        async function displayChunks() {
+            console.log("Displaying all text chunks...");
+            displayArea.innerHTML = '';
+
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+
+                    if (chunks.length > 0) {
+                        // Sort by timestamp (newest first)
+                        chunks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                        chunks.forEach(chunk => {
+                            const div = document.createElement('div');
+                            div.classList.add('stored-item');
+
+                            const chunkNumber = chunk.id.split('_')[1];
+                            const date = new Date(chunk.timestamp).toLocaleString();
+
+                            div.innerHTML = `
+                                <div class="item-header">
+                                    <span>Chunk #${chunkNumber}</span>
+                                    <button class="delete-button" onclick="deleteChunk('${chunk.id}')">Delete</button>
+                                </div>
+                                <div class="item-metadata">
+                                    Source: ${chunk.source} |
+                                    ${chunk.wordCount} words, ${chunk.charCount} chars |
+                                    Added: ${date} |
+                                    Embedded: ${chunk.isEmbedded ? '✅' : '❌'}
+                                </div>
+                                <div class="item-content">
+                                    ${chunk.content.length > 200 ? chunk.content.substring(0, 200) + '...' : chunk.content}
+                                </div>
+                            `;
+
+                            displayArea.appendChild(div);
+                        });
+                    } else {
+                        displayArea.innerHTML = '<p>No text chunks stored yet.</p>';
+                    }
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks:", event.target.error);
+                    showMessage("Error retrieving chunks from database.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to display chunks:", error);
+                showMessage("Failed to display chunks due to database error.", 'error');
+            }
+        }
+
+        // --- Transformer.js Embedding Functions ---
+
+        // Initialize the embedding model
+        async function initializeModel() {
+            modelStatus.textContent = `Loading embedding model: ${embeddingModelName}... (This might take a moment)`;
+            saveChunkButton.disabled = true;
+            generateEmbeddingsButton.disabled = true;
+            try {
+                // Initialize a feature-extraction pipeline
+                embeddingPipeline = await pipeline('feature-extraction', embeddingModelName);
+                modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                showMessage("Embedding model loaded successfully!", 'success');
+            } catch (error) {
+                console.error("Error loading embedding model:", error);
+                modelStatus.textContent = `Error loading model: ${error.message}`;
+                showMessage(`Failed to load embedding model: ${error.message}`, 'error');
+            } finally {
+                saveChunkButton.disabled = false;
+                generateEmbeddingsButton.disabled = false;
+            }
+        }
+
+        // Generate embeddings for all non-embedded chunks
+        async function generateEmbeddingsForChunks() {
+            if (!embeddingPipeline) {
+                showMessage("Embedding model not loaded. Please wait.", 'info');
+                return;
+            }
+
+            generateEmbeddingsButton.disabled = true;
+            saveChunkButton.disabled = true;
+            modelStatus.textContent = "Generating embeddings for new chunks...";
+
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = async (event) => {
+                    const allItems = event.target.result;
+                    const chunksToEmbed = allItems.filter(item => item.id !== COUNTER_KEY && !item.isEmbedded);
+
+                    if (chunksToEmbed.length === 0) {
+                        showMessage("No new chunks to embed.", 'info');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        return;
+                    }
+
+                    showMessage(`Generating embeddings for ${chunksToEmbed.length} chunks... This might take a while.`, 'info');
+
+                    for (const chunk of chunksToEmbed) {
+                        try {
+                            const output = await embeddingPipeline(chunk.content, { pooling: 'mean', normalize: true });
+                            // Convert Float32Array to a standard JavaScript Array for IndexedDB
+                            const embeddingArray = Array.from(output.data);
+
+                            chunk.embedding = embeddingArray;
+                            chunk.embeddingModel = embeddingModelName;
+                            chunk.isEmbedded = true;
+
+                            objectStore.put(chunk); // Update the chunk in IndexedDB
+                            console.log(`Embedded chunk ${chunk.id}`);
+                        } catch (embedError) {
+                            console.error(`Error embedding chunk ${chunk.id}:`, embedError);
+                            showMessage(`Failed to embed chunk ${chunk.id}: ${embedError.message}`, 'error');
+                            // Even if embedding fails for one, continue with others
+                            chunk.isEmbedded = false; // Mark as not embedded if error
+                            objectStore.put(chunk); // Persist status
+                        }
+                    }
+
+                    transaction.oncomplete = () => {
+                        showMessage("All pending chunks processed for embedding!", 'success');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        displayChunks();
+                        updateStats();
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Embedding transaction error:", event.target.error);
+                        showMessage("Error during embedding process: " + event.target.error?.message, 'error');
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                    };
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks for embedding:", event.target.error);
+                    showMessage("Error retrieving chunks for embedding: " + event.target.error?.message, 'error');
+                    generateEmbeddingsButton.disabled = false;
+                    saveChunkButton.disabled = false;
+                };
+
+            } catch (error) {
+                console.error("Failed to generate embeddings:", error);
+                showMessage("Failed to generate embeddings due to database or model error.", 'error');
+                generateEmbeddingsButton.disabled = false;
+                saveChunkButton.disabled = false;
+            }
+        }
+
+
+        // Add event listeners
+        saveChunkButton.addEventListener('click', saveNewChunk);
+        generateEmbeddingsButton.addEventListener('click', generateEmbeddingsForChunks);
+
+        // Initialize when page loads
+        window.onload = async () => {
+            try {
+                db = await openDB();
+                await initializeModel(); // Load the embedding model first
+                displayChunks();
+                updateStats();
+            } catch (error) {
+                console.error("Initialization failed:", error);
+            }
+        };
+    </script>
+</body>
+</html>
