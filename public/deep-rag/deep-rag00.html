@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IndexedDB Text Chunks for Embedding</title>
-    <!-- Removed Tailwind CSS script -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -174,7 +173,7 @@
             text-align: center;
             font-size: 0.9rem;
         }
-        .query-section {
+        .query-section, .data-io-section { /* Combined for similar styling */
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #eee;
@@ -208,6 +207,27 @@
             margin-top: 10px;
             resize: vertical;
             background-color: #f9f9f9;
+        }
+        .csv-input-group { /* Specific styling for CSV file input */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .csv-input-group input[type="file"] {
+            flex-grow: 1;
+            padding: 8px; /* Adjust padding for file input */
+        }
+        .csv-input-group button {
+            width: auto; /* Adjust button width */
+            margin-top: 0; /* Remove top margin */
+        }
+        .download-button {
+            background-color: #17a2b8; /* Info blue/cyan */
+            margin-bottom: 10px; /* Space below button */
+        }
+        .download-button:hover {
+            background-color: #138496; /* Darker info blue/cyan */
         }
     </style>
 </head>
@@ -263,6 +283,18 @@
             </div>
         </div>
 
+        <!-- Data Input/Output Section -->
+        <div class="data-io-section">
+            <h2>Data Import/Export:</h2>
+            <div class="csv-input-group">
+                <label for="csvFileInput">Upload CSV:</label>
+                <input type="file" id="csvFileInput" accept=".csv">
+                <button id="loadCsvButton">Load CSV</button>
+            </div>
+            <button id="downloadCsvButton" class="download-button">Download Data as CSV</button>
+        </div>
+
+
         <!-- Query Section -->
         <div class="query-section">
             <h2>Query & Retrieve:</h2>
@@ -300,20 +332,22 @@
         const queryInput = document.getElementById('queryInput');
         const searchChunksButton = document.getElementById('searchChunksButton');
         const searchResultsArea = document.getElementById('searchResultsArea');
-        const llmPromptOutput = document.getElementById('llmPromptOutput'); // New
-        const llmPromptGroup = document.getElementById('llmPromptGroup'); // New
-        const copyPromptButton = document.getElementById('copyPromptButton'); // New
+        const llmPromptOutput = document.getElementById('llmPromptOutput');
+        const llmPromptGroup = document.getElementById('llmPromptGroup');
+        const copyPromptButton = document.getElementById('copyPromptButton');
+        const csvFileInput = document.getElementById('csvFileInput'); // New
+        const loadCsvButton = document.getElementById('loadCsvButton'); // New
+        const downloadCsvButton = document.getElementById('downloadCsvButton'); // New
 
         // IndexedDB variables
         const DB_NAME = 'EmbeddingTextDB';
-        const DB_VERSION = 9; // Increment DB version for new functionality
+        const DB_VERSION = 10; // Increment DB version for new functionality
         const STORE_NAME = 'textChunks';
         const COUNTER_KEY = '__nextChunkIdCounter';
         let db;
 
         // Transformer.js model variables
         let embeddingPipeline = null;
-        // Using a small, efficient model for browser demonstration
         const embeddingModelName = 'Xenova/all-MiniLM-L6-v2';
 
         // Function to display messages to the user
@@ -429,14 +463,11 @@
             });
         }
 
-        // Function to save a new text chunk
-        async function saveNewChunk() {
+        // Function to save a new text chunk (can be called by manual input or CSV)
+        async function saveNewChunk(content, source = 'Unknown') {
             console.log("Adding new text chunk...");
-            const content = textInput.value.trim();
-            const source = sourceInput.value.trim() || 'Unknown';
-
             if (content === "") {
-                showMessage("Please enter some text content.", 'info');
+                showMessage("Text content cannot be empty.", 'info');
                 return;
             }
 
@@ -481,9 +512,7 @@
 
                     transaction.oncomplete = () => {
                         console.log("Text chunk saved successfully.");
-                        showMessage("Text chunk added successfully!", 'success');
-                        textInput.value = '';
-                        sourceInput.value = '';
+                        // showMessage("Text chunk added successfully!", 'success'); // Only show once for CSV import
                         displayChunks();
                         updateStats();
                     };
@@ -499,6 +528,17 @@
                 showMessage("Failed to add text chunk due to database error.", 'error');
             }
         }
+
+        // Manual text input handler
+        document.getElementById('saveChunkButton').addEventListener('click', () => {
+            const content = textInput.value.trim();
+            const source = sourceInput.value.trim() || 'Manual Input';
+            saveNewChunk(content, source);
+            textInput.value = ''; // Clear manual input after saving
+            sourceInput.value = '';
+            showMessage("Text chunk added successfully!", 'success');
+        });
+
 
         // Function to delete a chunk by its ID
         async function deleteChunk(id) {
@@ -601,6 +641,8 @@
             saveChunkButton.disabled = true;
             generateEmbeddingsButton.disabled = true;
             searchChunksButton.disabled = true; // Disable search button until model is loaded
+            loadCsvButton.disabled = true; // Disable CSV buttons
+            downloadCsvButton.disabled = true;
             try {
                 // Initialize a feature-extraction pipeline
                 embeddingPipeline = await pipeline('feature-extraction', embeddingModelName);
@@ -614,6 +656,8 @@
                 saveChunkButton.disabled = false;
                 generateEmbeddingsButton.disabled = false;
                 searchChunksButton.disabled = false; // Enable search button
+                loadCsvButton.disabled = false; // Enable CSV buttons
+                downloadCsvButton.disabled = false;
             }
         }
 
@@ -627,6 +671,8 @@
             generateEmbeddingsButton.disabled = true;
             saveChunkButton.disabled = true;
             searchChunksButton.disabled = true; // Disable search during embedding
+            loadCsvButton.disabled = true; // Disable CSV buttons
+            downloadCsvButton.disabled = true;
             modelStatus.textContent = "Generating embeddings for new chunks...";
 
             try {
@@ -648,6 +694,8 @@
                         generateEmbeddingsButton.disabled = false;
                         saveChunkButton.disabled = false;
                         searchChunksButton.disabled = false; // Enable search
+                        loadCsvButton.disabled = false; // Enable CSV buttons
+                        downloadCsvButton.disabled = false;
                         return;
                     }
 
@@ -682,6 +730,8 @@
                         generateEmbeddingsButton.disabled = false;
                         saveChunkButton.disabled = false;
                         searchChunksButton.disabled = false; // Enable search
+                        loadCsvButton.disabled = false; // Enable CSV buttons
+                        downloadCsvButton.disabled = false;
                     };
 
                     transaction.onerror = (event) => {
@@ -690,6 +740,8 @@
                         generateEmbeddingsButton.disabled = false;
                         saveChunkButton.disabled = false;
                         searchChunksButton.disabled = false; // Enable search
+                        loadCsvButton.disabled = false; // Enable CSV buttons
+                        downloadCsvButton.disabled = false;
                     };
                 };
 
@@ -699,6 +751,8 @@
                     generateEmbeddingsButton.disabled = false;
                     saveChunkButton.disabled = false;
                     searchChunksButton.disabled = false; // Enable search
+                    loadCsvButton.disabled = false; // Enable CSV buttons
+                    downloadCsvButton.disabled = false;
                 };
 
             } catch (error) {
@@ -707,6 +761,8 @@
                 generateEmbeddingsButton.disabled = false;
                 saveChunkButton.disabled = false;
                 searchChunksButton.disabled = false; // Enable search
+                loadCsvButton.disabled = false; // Enable CSV buttons
+                downloadCsvButton.disabled = false;
             }
         }
 
@@ -788,7 +844,6 @@
                     }
 
                     // Sort by similarity in descending order
-                    // FIX: Corrected a.a.similarity to a.similarity
                     rankedResults.sort((a, b) => b.similarity - a.similarity);
 
                     // Display top N results
@@ -859,12 +914,129 @@
             }
         }
 
+        // --- CSV Input/Output Functions ---
+
+        // Function to parse CSV and add to DB
+        async function loadCsvData() {
+            const file = csvFileInput.files[0];
+            if (!file) {
+                showMessage("Please select a CSV file.", 'info');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csvText = e.target.result;
+                const lines = csvText.split('\n');
+                let successfulImports = 0;
+                let failedImports = 0;
+
+                // Assuming the first line is the header: "number,content,source"
+                // Find the indices of 'content' and 'source'
+                const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const contentIndex = header.indexOf('content');
+                const sourceIndex = header.indexOf('source');
+
+                if (contentIndex === -1 || sourceIndex === -1) {
+                    showMessage("CSV must contain 'content' and 'source' columns.", 'error');
+                    return;
+                }
+
+                // Start from the second line (index 1) to skip header
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line === '') continue; // Skip empty lines
+
+                    // Simple split by comma. This might fail for content with escaped commas.
+                    // For robust CSV parsing, a library would be needed.
+                    // For now, assuming simple structure with content/source at specific indices
+                    const parts = line.split(',');
+
+                    if (parts.length > Math.max(contentIndex, sourceIndex)) {
+                        const content = parts[contentIndex].trim();
+                        const source = parts[sourceIndex].trim() || 'CSV Import';
+                        try {
+                             // Use raw saveNewChunk which doesn't show message per chunk
+                            await saveNewChunk(content, source);
+                            successfulImports++;
+                        } catch (error) {
+                            console.error("Error importing CSV row:", line, error);
+                            failedImports++;
+                        }
+                    } else {
+                        failedImports++;
+                        console.warn("Skipping malformed CSV row:", line);
+                    }
+                }
+                showMessage(`CSV import complete. Successfully added: ${successfulImports} chunks. Failed: ${failedImports}.`, 'success');
+                displayChunks();
+                updateStats();
+            };
+            reader.onerror = () => {
+                showMessage("Error reading CSV file.", 'error');
+            };
+            reader.readAsText(file);
+        }
+
+        // Function to download data as CSV
+        async function downloadCsvData() {
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+
+                    if (chunks.length === 0) {
+                        showMessage("No data to download.", 'info');
+                        return;
+                    }
+
+                    let csvContent = "number,content,source\n"; // CSV Header
+
+                    chunks.forEach(chunk => {
+                        const number = chunk.id.split('_')[1]; // Extract number from ID
+                        // Escape content and source if they contain commas or newlines
+                        const escapedContent = `"${chunk.content.replace(/"/g, '""')}"`;
+                        const escapedSource = `"${chunk.source.replace(/"/g, '""')}"`;
+                        csvContent += `${number},${escapedContent},${escapedSource}\n`;
+                    });
+
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'deep_rag_data.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                    showMessage("Data downloaded as CSV!", 'success');
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error fetching data for CSV download:", event.target.error);
+                    showMessage("Error fetching data for CSV download.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to download CSV:", error);
+                showMessage("Failed to download CSV due to database error.", 'error');
+            }
+        }
+
 
         // Add event listeners
-        saveChunkButton.addEventListener('click', saveNewChunk);
         generateEmbeddingsButton.addEventListener('click', generateEmbeddingsForChunks);
         searchChunksButton.addEventListener('click', searchRelevantChunks);
-        copyPromptButton.addEventListener('click', copyPromptToClipboard); // New event listener
+        copyPromptButton.addEventListener('click', copyPromptToClipboard);
+        loadCsvButton.addEventListener('click', loadCsvData); // New
+        downloadCsvButton.addEventListener('click', downloadCsvData); // New
 
         // Initialize when page loads
         window.onload = async () => {
