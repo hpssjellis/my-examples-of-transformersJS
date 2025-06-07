@@ -1,0 +1,829 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Text Chunks for Embedding</title>
+    <!-- Removed Tailwind CSS script -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0; /* Light background */
+            margin: 0;
+            padding: 20px; /* Padding for responsive layout */
+            box-sizing: border-box;
+        }
+        .main-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 1.5rem; /* Equivalent to text-2xl */
+            font-weight: bold; /* Equivalent to font-bold */
+            margin-bottom: 1rem; /* Equivalent to mb-4 */
+            color: #333; /* Equivalent to text-gray-800 */
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.875rem; /* Equivalent to text-sm */
+        }
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .generate-embeddings-button {
+            background-color: #3b82f6; /* Equivalent to bg-blue-500 */
+        }
+        .generate-embeddings-button:hover {
+            background-color: #2563eb; /* Equivalent to hover:bg-blue-600 */
+        }
+        .search-button {
+            background-color: #007bff; /* Blue for search */
+        }
+        .search-button:hover {
+            background-color: #0056b3; /* Darker blue */
+        }
+        .stored-items {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .stored-items h2 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.25rem; /* Equivalent to text-xl */
+            font-weight: 600; /* Equivalent to font-semibold */
+        }
+        .stored-item {
+            background-color: #e9ecef; /* Light gray */
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+            border-left: 4px solid #4CAF50; /* Green left border */
+        }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .item-metadata {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .item-content {
+            line-height: 1.4;
+            color: #444;
+        }
+        .delete-button {
+            background-color: #dc3545; /* Red */
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto;
+            margin-top: 0;
+            margin-left: 10px;
+        }
+        .delete-button:hover {
+            background-color: #c82333; /* Darker red */
+        }
+        .message-box {
+            background-color: #fff3cd; /* Light yellow */
+            color: #664d03; /* Dark yellow text */
+            border: 1px solid #ffecb5; /* Yellow border */
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
+        .stats {
+            background-color: #f8f9fa; /* Lighter gray */
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #495057; /* Darker gray text */
+        }
+        .model-status {
+            background-color: #e2f0fb; /* Light blue */
+            color: #004085; /* Dark blue text */
+            border: 1px solid #b8daff; /* Blue border */
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .query-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .search-result-item {
+            background-color: #dbeafe; /* Lighter blue */
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+            border-left: 4px solid #3b82f6; /* Blue left border */
+        }
+        .search-result-item strong {
+            color: #1e40af; /* Darker blue for strong text */
+        }
+        .search-results-area {
+            margin-top: 15px;
+            background-color: #eff6ff; /* Very light blue */
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #bfdbfe; /* Light blue border */
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1>Text Chunks for Embedding</h1>
+
+        <div class="stats" id="statsArea">
+            <strong>Database Stats:</strong> Loading...
+        </div>
+
+        <div class="model-status" id="modelStatus">
+            Loading embedding model...
+        </div>
+
+        <!-- Text Entry Section -->
+        <div class="input-group">
+            <label for="textInput">Text Content:</label>
+            <textarea id="textInput" placeholder="Enter text to be chunked and embedded..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="sourceInput">Source (optional):</label>
+            <input type="text" id="sourceInput" placeholder="e.g., document.pdf, chapter 1, etc.">
+        </div>
+
+        <div class="input-group">
+            <label for="chunkSizeInput">Chunk Size (characters):</label>
+            <input type="number" id="chunkSizeInput" value="500" min="100" max="2000" placeholder="500">
+        </div>
+
+        <div class="input-group">
+            <label for="overlapInput">Overlap (characters):</label>
+            <input type="number" id="overlapInput" value="50" min="0" max="200" placeholder="50">
+        </div>
+
+        <div class="input-group">
+            <label>
+                <input type="checkbox" id="autoChunkCheckbox" checked>
+                Auto-chunk large text (splits text longer than chunk size)
+            </label>
+        </div>
+
+        <button id="saveChunkButton">Process & Add Text</button>
+        <button id="generateEmbeddingsButton" class="generate-embeddings-button">Generate Embeddings</button>
+
+        <div id="messageBox" class="message-box"></div>
+
+        <div class="stored-items">
+            <h2>Stored Text Chunks:</h2>
+            <div id="displayArea">
+                <p>No text chunks stored yet.</p>
+            </div>
+        </div>
+
+        <!-- Query Section -->
+        <div class="query-section">
+            <h2>Query & Retrieve:</h2>
+            <div class="input-group">
+                <label for="queryInput">Your Query:</label>
+                <textarea id="queryInput" placeholder="Enter your question here..."></textarea>
+            </div>
+            <button id="searchChunksButton" class="search-button">Search Chunks</button>
+            <div id="searchResultsArea" class="search-results-area">
+                <p>Search results will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the pipeline function from Transformer.js
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+        // Get references to HTML elements
+        const textInput = document.getElementById('textInput');
+        const sourceInput = document.getElementById('sourceInput');
+        const saveChunkButton = document.getElementById('saveChunkButton');
+        const displayArea = document.getElementById('displayArea');
+        const messageBox = document.getElementById('messageBox');
+        const statsArea = document.getElementById('statsArea');
+        const modelStatus = document.getElementById('modelStatus');
+        const generateEmbeddingsButton = document.getElementById('generateEmbeddingsButton');
+        const queryInput = document.getElementById('queryInput'); // New
+        const searchChunksButton = document.getElementById('searchChunksButton'); // New
+        const searchResultsArea = document.getElementById('searchResultsArea'); // New
+
+        // IndexedDB variables
+        const DB_NAME = 'EmbeddingTextDB';
+        const DB_VERSION = 7; // Increment DB version for new functionality
+        const STORE_NAME = 'textChunks';
+        const COUNTER_KEY = '__nextChunkIdCounter';
+        let db;
+
+        // Transformer.js model variables
+        let embeddingPipeline = null;
+        // Using a small, efficient model for browser demonstration
+        const embeddingModelName = 'Xenova/all-MiniLM-L6-v2';
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            switch (type) {
+                case 'success':
+                    messageBox.style.backgroundColor = '#d4edda';
+                    messageBox.style.color = '#155724';
+                    messageBox.style.borderColor = '#c3e6cb';
+                    break;
+                case 'error':
+                    messageBox.style.backgroundColor = '#f8d7da';
+                    messageBox.style.color = '#721c24';
+                    messageBox.style.borderColor = '#f5c6cb';
+                    break;
+                case 'info':
+                default:
+                    messageBox.style.backgroundColor = '#fff3cd';
+                    messageBox.style.color = '#664d03';
+                    messageBox.style.borderColor = '#ffecb5';
+                    break;
+            }
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to update stats display
+        async function updateStats() {
+            try {
+                if (!db) return;
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+                    const totalChars = chunks.reduce((sum, chunk) => sum + (chunk.content?.length || 0), 0);
+                    const embeddedChunks = chunks.filter(chunk => chunk.isEmbedded).length;
+
+                    statsArea.innerHTML = `
+                        <strong>Database Stats:</strong>
+                        ${chunks.length} text chunks |
+                        ${totalChars} total characters |
+                        Average: ${chunks.length > 0 ? Math.round(totalChars / chunks.length) : 0} chars per chunk |
+                        Embedded: ${embeddedChunks} / ${chunks.length}
+                    `;
+                };
+            } catch (error) {
+                console.error("Error updating stats:", error);
+            }
+        }
+
+        // Function to open the IndexedDB database
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                console.log(`Opening IndexedDB: ${DB_NAME} (Version: ${DB_VERSION})`);
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.error);
+                    showMessage("Error opening database: " + event.target.error?.message, 'error');
+                    reject('Database error: ' + event.target.error?.message);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    console.log(`Database upgrade needed. Old version: ${event.oldVersion}`);
+
+                    let objectStore;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        console.log(`Object store '${STORE_NAME}' created.`);
+
+                        // Initialize the counter if new store
+                        objectStore.add({ id: COUNTER_KEY, value: 1 });
+                    } else {
+                        // If store already exists, get it for modifications
+                        objectStore = event.target.transaction.objectStore(STORE_NAME);
+                    }
+
+                    // Create/update indexes for efficient querying
+                    if (!objectStore.indexNames.contains('timestamp')) {
+                        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('source')) {
+                        objectStore.createIndex('source', 'source', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('wordCount')) {
+                        objectStore.createIndex('wordCount', 'wordCount', { unique: false });
+                    }
+                    // Add new indexes for embedding status and model
+                    if (!objectStore.indexNames.contains('isEmbedded')) {
+                        objectStore.createIndex('isEmbedded', 'isEmbedded', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('embeddingModel')) {
+                        objectStore.createIndex('embeddingModel', 'embeddingModel', { unique: false });
+                    }
+
+                    console.log(`Initialized/updated indexes.`);
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log("Database opened successfully.");
+                    showMessage("Database ready for text chunks.", 'success');
+                    resolve(db);
+                };
+            });
+        }
+
+        // Function to save a new text chunk
+        async function saveNewChunk() {
+            console.log("Adding new text chunk...");
+            const content = textInput.value.trim();
+            const source = sourceInput.value.trim() || 'Unknown';
+
+            if (content === "") {
+                showMessage("Please enter some text content.", 'info');
+                return;
+            }
+
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+
+                // Get the current counter value
+                const counterRequest = objectStore.get(COUNTER_KEY);
+                counterRequest.onsuccess = () => {
+                    let nextIdValue = 1;
+                    if (counterRequest.result) {
+                        nextIdValue = counterRequest.result.value;
+                    }
+
+                    const chunkId = 'chunk_' + nextIdValue;
+
+                    // Create text chunk object ready for embedding
+                    const textChunk = {
+                        id: chunkId,
+                        content: content,
+                        source: source,
+                        timestamp: new Date().toISOString(),
+                        wordCount: content.split(/\s+/).length,
+                        charCount: content.length,
+                        embedding: null,         // New field: will store the embedding vector
+                        embeddingModel: null,    // New field: will store the model name used
+                        isEmbedded: false        // New field: status of embedding
+                    };
+
+                    console.log(`Saving text chunk: ID="${chunkId}"`);
+
+                    // Add the new chunk
+                    objectStore.put(textChunk);
+
+                    // Update counter
+                    objectStore.put({ id: COUNTER_KEY, value: nextIdValue + 1 });
+
+                    transaction.oncomplete = () => {
+                        console.log("Text chunk saved successfully.");
+                        showMessage("Text chunk added successfully!", 'success');
+                        textInput.value = '';
+                        sourceInput.value = '';
+                        displayChunks();
+                        updateStats();
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Transaction error:", event.target.error);
+                        showMessage("Error adding text chunk: " + event.target.error?.message, 'error');
+                    };
+                };
+
+            } catch (error) {
+                console.error("Failed to add text chunk:", error);
+                showMessage("Failed to add text chunk due to database error.", 'error');
+            }
+        }
+
+        // Function to delete a chunk by its ID
+        async function deleteChunk(id) {
+            console.log(`Deleting chunk with ID: ${id}`);
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const request = objectStore.delete(id);
+
+                request.onsuccess = () => {
+                    console.log(`Chunk '${id}' deleted successfully.`);
+                    showMessage("Text chunk deleted successfully!", 'success');
+                    displayChunks();
+                    updateStats();
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error deleting chunk:", event.target.error);
+                    showMessage("Error deleting chunk: " + event.target.error?.message, 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to delete chunk:", error);
+                showMessage("Failed to delete chunk due to database error.", 'error');
+            }
+        }
+
+        // Function to display all text chunks
+        async function displayChunks() {
+            console.log("Displaying all text chunks...");
+            displayArea.innerHTML = '';
+
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+
+                    if (chunks.length > 0) {
+                        // Sort by timestamp (newest first)
+                        chunks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                        chunks.forEach(chunk => {
+                            const div = document.createElement('div');
+                            div.classList.add('stored-item');
+
+                            const chunkNumber = chunk.id.split('_')[1];
+                            const date = new Date(chunk.timestamp).toLocaleString();
+
+                            div.innerHTML = `
+                                <div class="item-header">
+                                    <span>Chunk #${chunkNumber}</span>
+                                    <button class="delete-button" onclick="deleteChunk('${chunk.id}')">Delete</button>
+                                </div>
+                                <div class="item-metadata">
+                                    Source: ${chunk.source} |
+                                    ${chunk.wordCount} words, ${chunk.charCount} chars |
+                                    Added: ${date} |
+                                    Embedded: ${chunk.isEmbedded ? '✅' : '❌'}
+                                </div>
+                                <div class="item-content">
+                                    ${chunk.content.length > 200 ? chunk.content.substring(0, 200) + '...' : chunk.content}
+                                </div>
+                            `;
+
+                            displayArea.appendChild(div);
+                        });
+                    } else {
+                        displayArea.innerHTML = '<p>No text chunks stored yet.</p>';
+                    }
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks:", event.target.error);
+                    showMessage("Error retrieving chunks from database.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to display chunks:", error);
+                showMessage("Failed to display chunks due to database error.", 'error');
+            }
+        }
+
+        // --- Transformer.js Embedding Functions ---
+
+        // Initialize the embedding model
+        async function initializeModel() {
+            modelStatus.textContent = `Loading embedding model: ${embeddingModelName}... (This might take a moment)`;
+            saveChunkButton.disabled = true;
+            generateEmbeddingsButton.disabled = true;
+            searchChunksButton.disabled = true; // Disable search button until model is loaded
+            try {
+                // Initialize a feature-extraction pipeline
+                embeddingPipeline = await pipeline('feature-extraction', embeddingModelName);
+                modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                showMessage("Embedding model loaded successfully!", 'success');
+            } catch (error) {
+                console.error("Error loading embedding model:", error);
+                modelStatus.textContent = `Error loading model: ${error.message}`;
+                showMessage(`Failed to load embedding model: ${error.message}`, 'error');
+            } finally {
+                saveChunkButton.disabled = false;
+                generateEmbeddingsButton.disabled = false;
+                searchChunksButton.disabled = false; // Enable search button
+            }
+        }
+
+        // Generate embeddings for all non-embedded chunks
+        async function generateEmbeddingsForChunks() {
+            if (!embeddingPipeline) {
+                showMessage("Embedding model not loaded. Please wait.", 'info');
+                return;
+            }
+
+            generateEmbeddingsButton.disabled = true;
+            saveChunkButton.disabled = true;
+            searchChunksButton.disabled = true; // Disable search during embedding
+            modelStatus.textContent = "Generating embeddings for new chunks...";
+
+            try {
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = async (event) => {
+                    const allItems = event.target.result;
+                    const chunksToEmbed = allItems.filter(item => item.id !== COUNTER_KEY && !item.isEmbedded);
+
+                    if (chunksToEmbed.length === 0) {
+                        showMessage("No new chunks to embed.", 'info');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        searchChunksButton.disabled = false; // Enable search
+                        return;
+                    }
+
+                    showMessage(`Generating embeddings for ${chunksToEmbed.length} chunks... This might take a while.`, 'info');
+
+                    for (const chunk of chunksToEmbed) {
+                        try {
+                            const output = await embeddingPipeline(chunk.content, { pooling: 'mean', normalize: true });
+                            // Convert Float32Array to a standard JavaScript Array for IndexedDB
+                            const embeddingArray = Array.from(output.data);
+
+                            chunk.embedding = embeddingArray;
+                            chunk.embeddingModel = embeddingModelName;
+                            chunk.isEmbedded = true;
+
+                            objectStore.put(chunk); // Update the chunk in IndexedDB
+                            console.log(`Embedded chunk ${chunk.id}`);
+                        } catch (embedError) {
+                            console.error(`Error embedding chunk ${chunk.id}:`, embedError);
+                            showMessage(`Failed to embed chunk ${chunk.id}: ${embedError.message}`, 'error');
+                            // Even if embedding fails for one, continue with others
+                            chunk.isEmbedded = false; // Mark as not embedded if error
+                            objectStore.put(chunk); // Persist status
+                        }
+                    }
+
+                    transaction.oncomplete = () => {
+                        showMessage("All pending chunks processed for embedding!", 'success');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        displayChunks();
+                        updateStats();
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        searchChunksButton.disabled = false; // Enable search
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Embedding transaction error:", event.target.error);
+                        showMessage("Error during embedding process: " + event.target.error?.message, 'error');
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        searchChunksButton.disabled = false; // Enable search
+                    };
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks for embedding:", event.target.error);
+                    showMessage("Error retrieving chunks for embedding: " + event.target.error?.message, 'error');
+                    generateEmbeddingsButton.disabled = false;
+                    saveChunkButton.disabled = false;
+                    searchChunksButton.disabled = false; // Enable search
+                };
+
+            } catch (error) {
+                console.error("Failed to generate embeddings:", error);
+                showMessage("Failed to generate embeddings due to database or model error.", 'error');
+                generateEmbeddingsButton.disabled = false;
+                saveChunkButton.disabled = false;
+                searchChunksButton.disabled = false; // Enable search
+            }
+        }
+
+        // --- Vector Similarity Search Functions ---
+
+        // Function to calculate cosine similarity between two vectors
+        function cosineSimilarity(vecA, vecB) {
+            if (!vecA || !vecB || vecA.length !== vecB.length) {
+                return 0; // Or throw error
+            }
+
+            let dotProduct = 0;
+            let magnitudeA = 0;
+            let magnitudeB = 0;
+
+            for (let i = 0; i < vecA.length; i++) {
+                dotProduct += vecA[i] * vecB[i];
+                magnitudeA += vecA[i] * vecA[i];
+                magnitudeB += vecB[i] * vecB[i];
+            }
+
+            magnitudeA = Math.sqrt(magnitudeA);
+            magnitudeB = Math.sqrt(magnitudeB);
+
+            if (magnitudeA === 0 || magnitudeB === 0) {
+                return 0;
+            }
+
+            return dotProduct / (magnitudeA * magnitudeB);
+        }
+
+        // Function to search for relevant chunks
+        async function searchRelevantChunks() {
+            const queryText = queryInput.value.trim();
+            if (queryText === "") {
+                showMessage("Please enter a query to search.", 'info');
+                return;
+            }
+            if (!embeddingPipeline) {
+                showMessage("Embedding model not loaded. Cannot perform search.", 'error');
+                return;
+            }
+
+            searchChunksButton.disabled = true;
+            modelStatus.textContent = "Generating query embedding and searching...";
+            searchResultsArea.innerHTML = '<p>Searching...</p>';
+
+            try {
+                // Generate embedding for the query
+                const queryOutput = await embeddingPipeline(queryText, { pooling: 'mean', normalize: true });
+                const queryEmbedding = Array.from(queryOutput.data);
+
+                if (!db) {
+                    db = await openDB();
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const embeddedChunks = allItems.filter(item => item.id !== COUNTER_KEY && item.isEmbedded && item.embedding);
+
+                    if (embeddedChunks.length === 0) {
+                        searchResultsArea.innerHTML = '<p>No embedded chunks available to search.</p>';
+                        showMessage("No embedded chunks found. Please add text and generate embeddings first.", 'info');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        searchChunksButton.disabled = false;
+                        return;
+                    }
+
+                    const rankedResults = [];
+                    for (const chunk of embeddedChunks) {
+                        const similarity = cosineSimilarity(queryEmbedding, chunk.embedding);
+                        rankedResults.push({ chunk: chunk, similarity: similarity });
+                    }
+
+                    // Sort by similarity in descending order
+                    rankedResults.sort((a, b) => b.similarity - a.similarity);
+
+                    // Display top N results
+                    const topN = 5; // Display top 5 most relevant chunks
+                    searchResultsArea.innerHTML = '<h3>Top Relevant Chunks:</h3>';
+                    if (rankedResults.length > 0) {
+                        const resultsList = document.createElement('div');
+                        let count = 0;
+                        for (const result of rankedResults) {
+                            if (count >= topN) break; // Limit to top N
+                            if (result.similarity > 0) { // Only show chunks with positive similarity
+                                const resultDiv = document.createElement('div');
+                                resultDiv.classList.add('search-result-item');
+                                resultDiv.innerHTML = `
+                                    <p><strong>Similarity:</strong> ${(result.similarity * 100).toFixed(2)}%</p>
+                                    <p><strong>Source:</strong> ${result.chunk.source}</p>
+                                    <p><strong>Content:</strong> ${result.chunk.content.length > 200 ? result.chunk.content.substring(0, 200) + '...' : result.chunk.content}</p>
+                                `;
+                                resultsList.appendChild(resultDiv);
+                                count++;
+                            }
+                        }
+                        if (count === 0) {
+                             searchResultsArea.innerHTML = '<p>No relevant chunks found for this query (similarity too low).</p>';
+                        } else {
+                            searchResultsArea.appendChild(resultsList);
+                        }
+
+                    } else {
+                        searchResultsArea.innerHTML = '<p>No relevant chunks found.</p>';
+                    }
+
+                    showMessage("Search complete!", 'success');
+                    modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks for search:", event.target.error);
+                    showMessage("Error retrieving chunks for search: " + event.target.error?.message, 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to perform search:", error);
+                showMessage("Failed to perform search due to model or database error.", 'error');
+            } finally {
+                searchChunksButton.disabled = false;
+            }
+        }
+
+
+        // Add event listeners
+        saveChunkButton.addEventListener('click', saveNewChunk);
+        generateEmbeddingsButton.addEventListener('click', generateEmbeddingsForChunks);
+        searchChunksButton.addEventListener('click', searchRelevantChunks); // New event listener
+
+        // Initialize when page loads
+        window.onload = async () => {
+            try {
+                db = await openDB();
+                await initializeModel(); // Load the embedding model first
+                displayChunks();
+                updateStats();
+            } catch (error) {
+                console.error("Initialization failed:", error);
+            }
+        };
+    </script>
+</body>
+</html>
