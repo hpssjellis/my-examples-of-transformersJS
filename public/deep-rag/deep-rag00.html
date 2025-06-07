@@ -196,7 +196,7 @@
             border-radius: 4px;
             border: 1px solid #bfdbfe; /* Light blue border */
         }
-        .llm-prompt-output { /* New style for LLM prompt textarea */
+        .llm-prompt-output, .llm-json-prompt-output { /* Styles for both prompt textareas */
             width: 100%;
             min-height: 150px;
             padding: 10px;
@@ -307,11 +307,18 @@
                 <p>Search results will appear here.</p>
             </div>
 
-            <!-- New LLM Prompt Section -->
+            <!-- LLM Prompt Section (Plain Text) -->
             <div class="input-group" id="llmPromptGroup" style="display: none;">
-                <label for="llmPromptOutput">LLM Prompt (Ready to use):</label>
+                <label for="llmPromptOutput">LLM Prompt (Plain Text):</label>
                 <textarea id="llmPromptOutput" class="llm-prompt-output" readonly></textarea>
                 <button id="copyPromptButton" class="copy-button">Copy Prompt to Clipboard</button>
+            </div>
+
+            <!-- New LLM Prompt Section (JSON Format) -->
+            <div class="input-group" id="llmJsonPromptGroup" style="display: none; margin-top: 20px;">
+                <label for="llmJsonPromptOutput">LLM Prompt (JSON Format):</label>
+                <textarea id="llmJsonPromptOutput" class="llm-json-prompt-output" readonly></textarea>
+                <button id="copyJsonPromptButton" class="copy-button">Copy JSON Prompt to Clipboard</button>
             </div>
         </div>
     </div>
@@ -335,13 +342,16 @@
         const llmPromptOutput = document.getElementById('llmPromptOutput');
         const llmPromptGroup = document.getElementById('llmPromptGroup');
         const copyPromptButton = document.getElementById('copyPromptButton');
-        const csvFileInput = document.getElementById('csvFileInput'); // New
-        const loadCsvButton = document.getElementById('loadCsvButton'); // New
-        const downloadCsvButton = document.getElementById('downloadCsvButton'); // New
+        const llmJsonPromptOutput = document.getElementById('llmJsonPromptOutput'); // New
+        const llmJsonPromptGroup = document.getElementById('llmJsonPromptGroup'); // New
+        const copyJsonPromptButton = document.getElementById('copyJsonPromptButton'); // New
+        const csvFileInput = document.getElementById('csvFileInput');
+        const loadCsvButton = document.getElementById('loadCsvButton');
+        const downloadCsvButton = document.getElementById('downloadCsvButton');
 
         // IndexedDB variables
         const DB_NAME = 'EmbeddingTextDB';
-        const DB_VERSION = 10; // Increment DB version for new functionality
+        const DB_VERSION = 11; // Increment DB version for new functionality
         const STORE_NAME = 'textChunks';
         const COUNTER_KEY = '__nextChunkIdCounter';
         let db;
@@ -809,8 +819,10 @@
             searchChunksButton.disabled = true;
             modelStatus.textContent = "Generating query embedding and searching...";
             searchResultsArea.innerHTML = '<p>Searching...</p>';
-            llmPromptGroup.style.display = 'none'; // Hide prompt group initially
-            llmPromptOutput.value = ''; // Clear previous prompt
+            llmPromptGroup.style.display = 'none'; // Hide plain text prompt group initially
+            llmPromptOutput.value = ''; // Clear previous plain text prompt
+            llmJsonPromptGroup.style.display = 'none'; // Hide JSON prompt group initially
+            llmJsonPromptOutput.value = ''; // Clear previous JSON prompt
 
             try {
                 // Generate embedding for the query
@@ -849,7 +861,8 @@
                     // Display top N results
                     const topN = 5; // Display top 5 most relevant chunks
                     searchResultsArea.innerHTML = '<h3>Top Relevant Chunks:</h3>';
-                    let promptContext = [];
+                    let promptContextPlain = [];
+                    let promptContextJson = [];
                     let relevantChunksFound = 0;
 
                     if (rankedResults.length > 0) {
@@ -865,7 +878,13 @@
                                     <p><strong>Content:</strong> ${result.chunk.content.length > 200 ? result.chunk.content.substring(0, 200) + '...' : result.chunk.content}</p>
                                 `;
                                 resultsList.appendChild(resultDiv);
-                                promptContext.push(`Chunk ${relevantChunksFound + 1} (Source: ${result.chunk.source}): ${result.chunk.content}`);
+                                promptContextPlain.push(`Chunk ${relevantChunksFound + 1} (Source: ${result.chunk.source}): ${result.chunk.content}`);
+                                promptContextJson.push({
+                                    id: result.chunk.id,
+                                    source: result.chunk.source,
+                                    content: result.chunk.content,
+                                    similarity: result.similarity
+                                });
                                 relevantChunksFound++;
                             }
                         }
@@ -873,10 +892,20 @@
                              searchResultsArea.innerHTML = '<p>No relevant chunks found for this query (similarity too low).</p>';
                         } else {
                             searchResultsArea.appendChild(resultsList);
-                            // Construct LLM Prompt
-                            const llmPrompt = `Based on the following information, answer the question:\n\nInformation:\n${promptContext.join('\n\n')}\n\nQuestion: ${queryText}\n\nAnswer:`;
+
+                            // Construct and display Plain Text LLM Prompt
+                            const llmPrompt = `Based on the following information, answer the question:\n\nInformation:\n${promptContextPlain.join('\n\n')}\n\nQuestion: ${queryText}\n\nAnswer:`;
                             llmPromptOutput.value = llmPrompt;
-                            llmPromptGroup.style.display = 'block'; // Show the prompt group
+                            llmPromptGroup.style.display = 'block'; // Show the plain text prompt group
+
+                            // Construct and display JSON LLM Prompt
+                            const llmJsonPrompt = {
+                                query: queryText,
+                                context: promptContextJson,
+                                format_instructions: "Please answer based on the provided context."
+                            };
+                            llmJsonPromptOutput.value = JSON.stringify(llmJsonPrompt, null, 2); // Pretty print JSON
+                            llmJsonPromptGroup.style.display = 'block'; // Show the JSON prompt group
                         }
 
                     } else {
@@ -901,16 +930,29 @@
             }
         }
 
-        // Function to copy LLM prompt to clipboard
+        // Function to copy LLM prompt (plain text) to clipboard
         function copyPromptToClipboard() {
             llmPromptOutput.select();
             llmPromptOutput.setSelectionRange(0, 99999); // For mobile devices
             try {
                 document.execCommand('copy');
-                showMessage('Prompt copied to clipboard!', 'success');
+                showMessage('Plain text prompt copied to clipboard!', 'success');
             } catch (err) {
                 console.error('Failed to copy prompt: ', err);
                 showMessage('Failed to copy prompt.', 'error');
+            }
+        }
+
+        // Function to copy LLM prompt (JSON) to clipboard
+        function copyJsonPromptToClipboard() {
+            llmJsonPromptOutput.select();
+            llmJsonPromptOutput.setSelectionRange(0, 99999); // For mobile devices
+            try {
+                document.execCommand('copy');
+                showMessage('JSON prompt copied to clipboard!', 'success');
+            } catch (err) {
+                console.error('Failed to copy JSON prompt: ', err);
+                showMessage('Failed to copy JSON prompt.', 'error');
             }
         }
 
@@ -1035,8 +1077,9 @@
         generateEmbeddingsButton.addEventListener('click', generateEmbeddingsForChunks);
         searchChunksButton.addEventListener('click', searchRelevantChunks);
         copyPromptButton.addEventListener('click', copyPromptToClipboard);
-        loadCsvButton.addEventListener('click', loadCsvData); // New
-        downloadCsvButton.addEventListener('click', downloadCsvData); // New
+        copyJsonPromptButton.addEventListener('click', copyJsonPromptToClipboard); // New event listener
+        loadCsvButton.addEventListener('click', loadCsvData);
+        downloadCsvButton.addEventListener('click', downloadCsvData);
 
         // Initialize when page loads
         window.onload = async () => {
