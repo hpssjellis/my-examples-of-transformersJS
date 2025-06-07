@@ -285,8 +285,10 @@
     </div>
 
     <script type="module">
+
+        //<script type="module">    import { pipeline, TextStreamer, InterruptableStoppingCriteria } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
         // Import the pipeline function from Transformer.js
-        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@3.5.1';
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
 
         // Get references to HTML elements
         const textInput = document.getElementById('textInput');
