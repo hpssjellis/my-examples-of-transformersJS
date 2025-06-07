@@ -1,0 +1,1384 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Text Chunks for Embedding</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0; /* Light background */
+            margin: 0;
+            padding: 20px; /* Padding for responsive layout */
+            box-sizing: border-box;
+        }
+        .main-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 1.5rem; /* Equivalent to text-2xl */
+            font-weight: bold; /* Equivalent to font-bold */
+            margin-bottom: 1rem; /* Equivalent to mb-4 */
+            color: #333; /* Equivalent to text-gray-800 */
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.875rem; /* Equivalent to text-sm */
+        }
+        input[type="text"], input[type="number"], textarea, select { /* Added select */
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .generate-embeddings-button {
+            background-color: #3b82f6; /* Equivalent to bg-blue-500 */
+        }
+        .generate-embeddings-button:hover {
+            background-color: #2563eb; /* Equivalent to hover:bg-blue-600 */
+        }
+        .search-button {
+            background-color: #007bff; /* Blue for search */
+        }
+        .search-button:hover {
+            background-color: #0056b3; /* Darker blue */
+        }
+        .copy-button { /* New style for copy button */
+            background-color: #6c757d; /* Gray for copy */
+            margin-top: 5px;
+        }
+        .copy-button:hover {
+            background-color: #5a6268; /* Darker gray */
+        }
+        .stored-items {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .stored-items h2 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.25rem; /* Equivalent to text-xl */
+            font-weight: 600; /* Equivalent to font-semibold */
+        }
+        .stored-item {
+            background-color: #e9ecef; /* Light gray */
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+            border-left: 4px solid #4CAF50; /* Green left border */
+        }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .item-metadata {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .item-content {
+            line-height: 1.4;
+            color: #444;
+        }
+        .delete-button {
+            background-color: #dc3545; /* Red */
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto;
+            margin-top: 0;
+            margin-left: 10px;
+        }
+        .delete-button:hover {
+            background-color: #c82333; /* Darker red */
+        }
+        .message-box {
+            background-color: #fff3cd; /* Light yellow */
+            color: #664d03; /* Dark yellow text */
+            border: 1px solid #ffecb5; /* Yellow border */
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
+        .stats {
+            background-color: #f8f9fa; /* Lighter gray */
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #495057; /* Darker gray text */
+        }
+        .model-status {
+            background-color: #e2f0fb; /* Light blue */
+            color: #004085; /* Dark blue text */
+            border: 1px solid #b8daff; /* Blue border */
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .query-section, .data-io-section, .db-management-section { /* Combined for similar styling */
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .search-result-item {
+            background-color: #dbeafe; /* Lighter blue */
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+            border-left: 4px solid #3b82f6; /* Blue left border */
+        }
+        .search-result-item strong {
+            color: #1e40af; /* Darker blue for strong text */
+        }
+        .search-results-area {
+            margin-top: 15px;
+            background-color: #eff6ff; /* Very light blue */
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #bfdbfe; /* Light blue border */
+        }
+        .llm-prompt-output, .llm-json-prompt-output { /* Styles for both prompt textareas */
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            resize: vertical;
+            background-color: #f9f9f9;
+        }
+        .csv-input-group { /* Specific styling for CSV file input */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .csv-input-group input[type="file"] {
+            flex-grow: 1;
+            padding: 8px; /* Adjust padding for file input */
+        }
+        .csv-input-group button {
+            width: auto; /* Adjust button width */
+            margin-top: 0; /* Remove top margin */
+        }
+        .download-button {
+            background-color: #17a2b8; /* Info blue/cyan */
+            margin-bottom: 10px; /* Space below button */
+        }
+        .download-button:hover {
+            background-color: #138496; /* Darker info blue/cyan */
+        }
+        /* Database management specific styles */
+        .db-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            margin-top: 10px;
+        }
+        .db-controls button {
+            flex: 1; /* Distribute space evenly */
+            min-width: 120px; /* Minimum width for buttons */
+        }
+        .db-select-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .db-select-group select {
+            flex-grow: 1;
+        }
+        .db-delete-button {
+            background-color: #dc3545; /* Red for delete */
+        }
+        .db-delete-button:hover {
+            background-color: #c82333; /* Darker red */
+        }
+        .db-create-button {
+            background-color: #28a745; /* Green for create */
+        }
+        .db-create-button:hover {
+            background-color: #218838; /* Darker green */
+        }
+        .db-label {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #555;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1>Text Chunks for Embedding</h1>
+
+        <div class="stats" id="statsArea">
+            <strong>Database Stats:</strong> Loading...
+        </div>
+
+        <div class="model-status" id="modelStatus">
+            Loading embedding model...
+        </div>
+
+        <!-- Database Management Section -->
+        <div class="db-management-section">
+            <h2>Database Management:</h2>
+            <div class="db-select-group">
+                <label for="dbSelector">Select DB:</label>
+                <select id="dbSelector"></select>
+                <button id="loadDbButton" style="background-color: #007bff;">Load Selected</button>
+            </div>
+            <div class="input-group">
+                <label for="newDbNameInput">New DB Name:</label>
+                <input type="text" id="newDbNameInput" placeholder="e.g., my_new_rag_db">
+            </div>
+            <div class="db-controls">
+                <button id="createNewDbButton" class="db-create-button">Create New DB</button>
+                <button id="deleteCurrentDbButton" class="db-delete-button">Delete Current DB</button>
+            </div>
+            <p id="currentDbInfo" class="db-label">Current DB: <span id="currentDbNameDisplay">N/A</span></p>
+        </div>
+
+
+        <!-- Text Entry Section -->
+        <div class="input-group">
+            <label for="textInput">Text Content:</label>
+            <textarea id="textInput" placeholder="Enter text to be chunked and embedded..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="sourceInput">Source (optional):</label>
+            <input type="text" id="sourceInput" placeholder="e.g., document.pdf, chapter 1, etc.">
+        </div>
+
+        <div class="input-group">
+            <label for="chunkSizeInput">Chunk Size (characters):</label>
+            <input type="number" id="chunkSizeInput" value="500" min="100" max="2000" placeholder="500">
+        </div>
+
+        <div class="input-group">
+            <label for="overlapInput">Overlap (characters):</label>
+            <input type="number" id="overlapInput" value="50" min="0" max="200" placeholder="50">
+        </div>
+
+        <div class="input-group">
+            <label>
+                <input type="checkbox" id="autoChunkCheckbox" checked>
+                Auto-chunk large text (splits text longer than chunk size)
+            </label>
+        </div>
+
+        <button id="saveChunkButton">Process & Add Text</button>
+        <button id="generateEmbeddingsButton" class="generate-embeddings-button">Generate Embeddings</button>
+
+        <div id="messageBox" class="message-box"></div>
+
+        <div class="stored-items">
+            <h2>Stored Text Chunks:</h2>
+            <div id="displayArea">
+                <p>No text chunks stored yet.</p>
+            </div>
+        </div>
+
+        <!-- Data Input/Output Section -->
+        <div class="data-io-section">
+            <h2>Data Import/Export:</h2>
+            <div class="csv-input-group">
+                <label for="csvFileInput">Upload CSV:</label>
+                <input type="file" id="csvFileInput" accept=".csv">
+                <button id="loadCsvButton">Load CSV</button>
+            </div>
+            <button id="downloadCsvButton" class="download-button">Download Data as CSV</button>
+        </div>
+
+
+        <!-- Query Section -->
+        <div class="query-section">
+            <h2>Query & Retrieve:</h2>
+            <div class="input-group">
+                <label for="queryInput">Your Query:</label>
+                <textarea id="queryInput" placeholder="Enter your question here..."></textarea>
+            </div>
+            <button id="searchChunksButton" class="search-button">Search Chunks</button>
+            <div id="searchResultsArea" class="search-results-area">
+                <p>Search results will appear here.</p>
+            </div>
+
+            <!-- LLM Prompt Section (Plain Text) -->
+            <div class="input-group" id="llmPromptGroup" style="display: none;">
+                <label for="llmPromptOutput">LLM Prompt (Plain Text):</label>
+                <textarea id="llmPromptOutput" class="llm-prompt-output" readonly></textarea>
+                <button id="copyPromptButton" class="copy-button">Copy Prompt to Clipboard</button>
+            </div>
+
+            <!-- New LLM Prompt Section (JSON Format) -->
+            <div class="input-group" id="llmJsonPromptGroup" style="display: none; margin-top: 20px;">
+                <label for="llmJsonPromptOutput">LLM Prompt (JSON Format):</label>
+                <textarea id="llmJsonPromptOutput" class="llm-json-prompt-output" readonly></textarea>
+                <button id="copyJsonPromptButton" class="copy-button">Copy JSON Prompt to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the pipeline function from Transformer.js
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
+
+        // Get references to HTML elements
+        const textInput = document.getElementById('textInput');
+        const sourceInput = document.getElementById('sourceInput');
+        const saveChunkButton = document.getElementById('saveChunkButton');
+        const displayArea = document.getElementById('displayArea');
+        const messageBox = document.getElementById('messageBox');
+        const statsArea = document.getElementById('statsArea');
+        const modelStatus = document.getElementById('modelStatus');
+        const generateEmbeddingsButton = document.getElementById('generateEmbeddingsButton');
+        const queryInput = document.getElementById('queryInput');
+        const searchChunksButton = document.getElementById('searchChunksButton');
+        const searchResultsArea = document.getElementById('searchResultsArea');
+        const llmPromptOutput = document.getElementById('llmPromptOutput');
+        const llmPromptGroup = document.getElementById('llmPromptGroup');
+        const copyPromptButton = document.getElementById('copyPromptButton');
+        const llmJsonPromptOutput = document.getElementById('llmJsonPromptOutput');
+        const llmJsonPromptGroup = document.getElementById('llmJsonPromptGroup');
+        const copyJsonPromptButton = document.getElementById('copyJsonPromptButton');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const loadCsvButton = document.getElementById('loadCsvButton');
+        const downloadCsvButton = document.getElementById('downloadCsvButton');
+
+        // New DB management elements
+        const dbSelector = document.getElementById('dbSelector');
+        const loadDbButton = document.getElementById('loadDbButton');
+        const newDbNameInput = document.getElementById('newDbNameInput');
+        const createNewDbButton = document.getElementById('createNewDbButton');
+        const deleteCurrentDbButton = document.getElementById('deleteCurrentDbButton');
+        const currentDbNameDisplay = document.getElementById('currentDbNameDisplay');
+
+        // IndexedDB variables
+        const DB_LIST_KEY = 'rag_db_list'; // localStorage key to store list of DB names
+        const LAST_USED_DB_KEY = 'rag_last_used_db'; // localStorage key for last used DB
+        const DB_VERSION = 13; // Increment DB version for new functionality
+        const STORE_NAME = 'textChunks';
+        const COUNTER_KEY = '__nextChunkIdCounter';
+        let db;
+        let currentDBName; // Variable to hold the name of the currently active database
+
+        // Transformer.js model variables
+        let embeddingPipeline = null;
+        const embeddingModelName = 'Xenova/all-MiniLM-L6-v2'; // Still using Xenova model name convention
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            switch (type) {
+                case 'success':
+                    messageBox.style.backgroundColor = '#d4edda';
+                    messageBox.style.color = '#155724';
+                    messageBox.style.borderColor = '#c3e6cb';
+                    break;
+                case 'error':
+                    messageBox.style.backgroundColor = '#f8d7da';
+                    messageBox.style.color = '#721c24';
+                    messageBox.style.borderColor = '#f5c6cb';
+                    break;
+                case 'info':
+                default:
+                    messageBox.style.backgroundColor = '#fff3cd';
+                    messageBox.style.color = '#664d03';
+                    messageBox.style.borderColor = '#ffecb5';
+                    break;
+            }
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to update stats display
+        async function updateStats() {
+            try {
+                if (!db) {
+                    statsArea.innerHTML = `<strong>Database Stats:</strong> No database loaded.`;
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+                    const totalChars = chunks.reduce((sum, chunk) => sum + (chunk.content?.length || 0), 0);
+                    const embeddedChunks = chunks.filter(chunk => chunk.isEmbedded).length;
+
+                    statsArea.innerHTML = `
+                        <strong>Database Stats:</strong>
+                        ${chunks.length} text chunks |
+                        ${totalChars} total characters |
+                        Average: ${chunks.length > 0 ? Math.round(totalChars / chunks.length) : 0} chars per chunk |
+                        Embedded: ${embeddedChunks} / ${chunks.length}
+                    `;
+                };
+            } catch (error) {
+                console.error("Error updating stats:", error);
+            }
+        }
+
+        /**
+         * Opens an IndexedDB database.
+         * @param {string} dbName The name of the database to open.
+         * @returns {Promise<IDBDatabase>} A promise that resolves with the opened database.
+         */
+        function openDB(dbName) {
+            return new Promise((resolve, reject) => {
+                if (db) { // Close existing DB connection if any
+                    db.close();
+                    db = null;
+                }
+                currentDBName = dbName;
+                localStorage.setItem(LAST_USED_DB_KEY, dbName);
+                currentDbNameDisplay.textContent = dbName;
+
+                console.log(`Opening IndexedDB: ${dbName} (Version: ${DB_VERSION})`);
+                const request = indexedDB.open(dbName, DB_VERSION);
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.error);
+                    showMessage(`Error opening database '${dbName}': ${event.target.error?.message}`, 'error');
+                    reject('Database error: ' + event.target.error?.message);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    console.log(`Database upgrade needed for '${dbName}'. Old version: ${event.oldVersion}`);
+
+                    let objectStore;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        console.log(`Object store '${STORE_NAME}' created.`);
+
+                        // Initialize the counter if new store
+                        objectStore.add({ id: COUNTER_KEY, value: 1 });
+                    } else {
+                        // If store already exists, get it for modifications
+                        objectStore = event.target.transaction.objectStore(STORE_NAME);
+                    }
+
+                    // Create/update indexes for efficient querying
+                    if (!objectStore.indexNames.contains('timestamp')) {
+                        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('source')) {
+                        objectStore.createIndex('source', 'source', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('wordCount')) {
+                        objectStore.createIndex('wordCount', 'wordCount', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('isEmbedded')) {
+                        objectStore.createIndex('isEmbedded', 'isEmbedded', { unique: false });
+                    }
+                    if (!objectStore.indexNames.contains('embeddingModel')) {
+                        objectStore.createIndex('embeddingModel', 'embeddingModel', { unique: false });
+                    }
+
+                    console.log(`Initialized/updated indexes for '${dbName}'.`);
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log(`Database '${dbName}' opened successfully.`);
+                    showMessage(`Database '${dbName}' loaded.`, 'success');
+                    resolve(db);
+                };
+            });
+        }
+
+        // Function to save a new text chunk (can be called by manual input or CSV)
+        async function saveNewChunk(content, source = 'Unknown') {
+            console.log("Adding new text chunk...");
+            if (content === "") {
+                showMessage("Text content cannot be empty.", 'info');
+                return;
+            }
+
+            try {
+                if (!db) {
+                    showMessage("No database loaded. Please create or load a database first.", 'error');
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+
+                // Get the current counter value
+                const counterRequest = objectStore.get(COUNTER_KEY);
+                counterRequest.onsuccess = () => {
+                    let nextIdValue = 1;
+                    if (counterRequest.result) {
+                        nextIdValue = counterRequest.result.value;
+                    }
+
+                    const chunkId = 'chunk_' + nextIdValue;
+
+                    // Create text chunk object ready for embedding
+                    const textChunk = {
+                        id: chunkId,
+                        content: content,
+                        source: source,
+                        timestamp: new Date().toISOString(),
+                        wordCount: content.split(/\s+/).length,
+                        charCount: content.length,
+                        embedding: null,         // New field: will store the embedding vector
+                        embeddingModel: null,    // New field: will store the model name used
+                        isEmbedded: false        // New field: status of embedding
+                    };
+
+                    console.log(`Saving text chunk: ID="${chunkId}"`);
+
+                    // Add the new chunk
+                    objectStore.put(textChunk);
+
+                    // Update counter
+                    objectStore.put({ id: COUNTER_KEY, value: nextIdValue + 1 });
+
+                    transaction.oncomplete = () => {
+                        console.log("Text chunk saved successfully.");
+                        // showMessage("Text chunk added successfully!", 'success'); // Only show once for CSV import
+                        displayChunks();
+                        updateStats();
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Transaction error:", event.target.error);
+                        showMessage("Error adding text chunk: " + event.target.error?.message, 'error');
+                    };
+                };
+
+            } catch (error) {
+                console.error("Failed to add text chunk:", error);
+                showMessage("Failed to add text chunk due to database error.", 'error');
+            }
+        }
+
+        // Manual text input handler
+        document.getElementById('saveChunkButton').addEventListener('click', () => {
+            const content = textInput.value.trim();
+            const source = sourceInput.value.trim() || 'Manual Input';
+            saveNewChunk(content, source);
+            textInput.value = ''; // Clear manual input after saving
+            sourceInput.value = '';
+            showMessage("Text chunk added successfully!", 'success');
+        });
+
+
+        // Function to delete a chunk by its ID
+        async function deleteChunk(id) {
+            console.log(`Deleting chunk with ID: ${id}`);
+            try {
+                if (!db) {
+                    showMessage("No database loaded to delete from.", 'info');
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const request = objectStore.delete(id);
+
+                request.onsuccess = () => {
+                    console.log(`Chunk '${id}' deleted successfully.`);
+                    showMessage("Text chunk deleted successfully!", 'success');
+                    displayChunks();
+                    updateStats();
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error deleting chunk:", event.target.error);
+                    showMessage("Error deleting chunk: " + event.target.error?.message, 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to delete chunk:", error);
+                showMessage("Failed to delete chunk due to database error.", 'error');
+            }
+        }
+
+        // Function to display all text chunks
+        async function displayChunks() {
+            console.log("Displaying all text chunks...");
+            displayArea.innerHTML = '';
+
+            try {
+                if (!db) {
+                    displayArea.innerHTML = '<p>No database loaded. Please create or load one.</p>';
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+
+                    if (chunks.length > 0) {
+                        // Sort by timestamp (newest first)
+                        chunks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                        chunks.forEach(chunk => {
+                            const div = document.createElement('div');
+                            div.classList.add('stored-item');
+
+                            const chunkNumber = chunk.id.split('_')[1];
+                            const date = new Date(chunk.timestamp).toLocaleString();
+
+                            div.innerHTML = `
+                                <div class="item-header">
+                                    <span>Chunk #${chunkNumber}</span>
+                                    <button class="delete-button" onclick="deleteChunk('${chunk.id}')">Delete</button>
+                                </div>
+                                <div class="item-metadata">
+                                    Source: ${chunk.source} |
+                                    ${chunk.wordCount} words, ${chunk.charCount} chars |
+                                    Added: ${date} |
+                                    Embedded: ${chunk.isEmbedded ? '✅' : '❌'}
+                                </div>
+                                <div class="item-content">
+                                    ${chunk.content.length > 200 ? chunk.content.substring(0, 200) + '...' : chunk.content}
+                                </div>
+                            `;
+
+                            displayArea.appendChild(div);
+                        });
+                    } else {
+                        displayArea.innerHTML = '<p>No text chunks stored yet.</p>';
+                    }
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks:", event.target.error);
+                    showMessage("Error retrieving chunks from database.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to display chunks:", error);
+                showMessage("Failed to display chunks due to database error.", 'error');
+            }
+        }
+
+        // --- Transformer.js Embedding Functions ---
+
+        // Initialize the embedding model with progress updates
+        async function initializeModel() {
+            saveChunkButton.disabled = true;
+            generateEmbeddingsButton.disabled = true;
+            searchChunksButton.disabled = true;
+            loadCsvButton.disabled = true;
+            downloadCsvButton.disabled = true;
+            createNewDbButton.disabled = true;
+            deleteCurrentDbButton.disabled = true;
+            loadDbButton.disabled = true;
+
+            // Progress callback function
+            const progress_callback = (data) => {
+                let statusMessage = `Loading model: ${embeddingModelName}... `;
+                if (data.status === 'download') {
+                    const loadedMB = (data.loaded / (1024 * 1024)).toFixed(2);
+                    const totalMB = (data.total / (1024 * 1024)).toFixed(2);
+                    const percentage = data.progress ? data.progress.toFixed(2) : '0.00';
+                    statusMessage = `Downloading ${data.file} (${percentage}%) - ${loadedMB}MB / ${totalMB}MB`;
+                } else if (data.status === 'progress') {
+                     // This 'progress' status is for the overall loading, after download
+                    const percentage = data.progress ? data.progress.toFixed(2) : '0.00';
+                    statusMessage = `Processing model files: ${percentage}%`;
+                } else if (data.status === 'ready') {
+                    statusMessage = `Model ready!`;
+                }
+                modelStatus.textContent = statusMessage;
+            };
+
+            try {
+                modelStatus.textContent = `Initializing embedding model: ${embeddingModelName}...`;
+                // Pass the progress_callback to the pipeline function
+                embeddingPipeline = await pipeline('feature-extraction', embeddingModelName, { progress_callback });
+                modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                showMessage("Embedding model loaded successfully!", 'success');
+            } catch (error) {
+                console.error("Error loading embedding model:", error);
+                modelStatus.textContent = `Error loading model: ${error.message}`;
+                showMessage(`Failed to load embedding model: ${error.message}`, 'error');
+            } finally {
+                saveChunkButton.disabled = false;
+                generateEmbeddingsButton.disabled = false;
+                searchChunksButton.disabled = false;
+                loadCsvButton.disabled = false;
+                downloadCsvButton.disabled = false;
+                createNewDbButton.disabled = false;
+                deleteCurrentDbButton.disabled = false;
+                loadDbButton.disabled = false;
+            }
+        }
+
+        // Generate embeddings for all non-embedded chunks
+        async function generateEmbeddingsForChunks() {
+            if (!embeddingPipeline) {
+                showMessage("Embedding model not loaded. Please wait.", 'info');
+                return;
+            }
+            if (!db) {
+                showMessage("No database loaded. Please create or load a database first.", 'error');
+                return;
+            }
+
+            generateEmbeddingsButton.disabled = true;
+            saveChunkButton.disabled = true;
+            searchChunksButton.disabled = true;
+            loadCsvButton.disabled = true;
+            downloadCsvButton.disabled = true;
+            createNewDbButton.disabled = true;
+            deleteCurrentDbButton.disabled = true;
+            loadDbButton.disabled = true;
+            modelStatus.textContent = "Generating embeddings for new chunks...";
+
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = async (event) => {
+                    const allItems = event.target.result;
+                    const chunksToEmbed = allItems.filter(item => item.id !== COUNTER_KEY && !item.isEmbedded);
+
+                    if (chunksToEmbed.length === 0) {
+                        showMessage("No new chunks to embed.", 'info');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        searchChunksButton.disabled = false;
+                        loadCsvButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                        createNewDbButton.disabled = false;
+                        deleteCurrentDbButton.disabled = false;
+                        loadDbButton.disabled = false;
+                        return;
+                    }
+
+                    showMessage(`Generating embeddings for ${chunksToEmbed.length} chunks... This might take a while.`, 'info');
+
+                    for (const chunk of chunksToEmbed) {
+                        try {
+                            const output = await embeddingPipeline(chunk.content, { pooling: 'mean', normalize: true });
+                            const embeddingArray = Array.from(output.data);
+
+                            chunk.embedding = embeddingArray;
+                            chunk.embeddingModel = embeddingModelName;
+                            chunk.isEmbedded = true;
+
+                            objectStore.put(chunk);
+                            console.log(`Embedded chunk ${chunk.id}`);
+                        } catch (embedError) {
+                            console.error(`Error embedding chunk ${chunk.id}:`, embedError);
+                            showMessage(`Failed to embed chunk ${chunk.id}: ${embedError.message}`, 'error');
+                            chunk.isEmbedded = false;
+                            objectStore.put(chunk);
+                        }
+                    }
+
+                    transaction.oncomplete = () => {
+                        showMessage("All pending chunks processed for embedding!", 'success');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        displayChunks();
+                        updateStats();
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        searchChunksButton.disabled = false;
+                        loadCsvButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                        createNewDbButton.disabled = false;
+                        deleteCurrentDbButton.disabled = false;
+                        loadDbButton.disabled = false;
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("Embedding transaction error:", event.target.error);
+                        showMessage("Error during embedding process: " + event.target.error?.message, 'error');
+                        generateEmbeddingsButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        searchChunksButton.disabled = false;
+                        loadCsvButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                        createNewDbButton.disabled = false;
+                        deleteCurrentDbButton.disabled = false;
+                        loadDbButton.disabled = false;
+                    };
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks for embedding:", event.target.error);
+                    showMessage("Error retrieving chunks for embedding: " + event.target.error?.message, 'error');
+                    generateEmbeddingsButton.disabled = false;
+                    saveChunkButton.disabled = false;
+                    searchChunksButton.disabled = false;
+                    loadCsvButton.disabled = false;
+                    downloadCsvButton.disabled = false;
+                    createNewDbButton.disabled = false;
+                    deleteCurrentDbButton.disabled = false;
+                    loadDbButton.disabled = false;
+                };
+
+            } catch (error) {
+                console.error("Failed to generate embeddings:", error);
+                showMessage("Failed to generate embeddings due to database or model error.", 'error');
+                generateEmbeddingsButton.disabled = false;
+                saveChunkButton.disabled = false;
+                searchChunksButton.disabled = false;
+                loadCsvButton.disabled = false;
+                downloadCsvButton.disabled = false;
+                createNewDbButton.disabled = false;
+                deleteCurrentDbButton.disabled = false;
+                loadDbButton.disabled = false;
+            }
+        }
+
+        // --- Vector Similarity Search Functions ---
+        function cosineSimilarity(vecA, vecB) {
+            if (!vecA || !vecB || vecA.length !== vecB.length) {
+                return 0;
+            }
+            let dotProduct = 0;
+            let magnitudeA = 0;
+            let magnitudeB = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                dotProduct += vecA[i] * vecB[i];
+                magnitudeA += vecA[i] * vecA[i];
+                magnitudeB += vecB[i] * vecB[i];
+            }
+            magnitudeA = Math.sqrt(magnitudeA);
+            magnitudeB = Math.sqrt(magnitudeB);
+            if (magnitudeA === 0 || magnitudeB === 0) {
+                return 0;
+            }
+            return dotProduct / (magnitudeA * magnitudeB);
+        }
+
+        async function searchRelevantChunks() {
+            const queryText = queryInput.value.trim();
+            if (queryText === "") {
+                showMessage("Please enter a query to search.", 'info');
+                return;
+            }
+            if (!embeddingPipeline) {
+                showMessage("Embedding model not loaded. Cannot perform search.", 'error');
+                return;
+            }
+            if (!db) {
+                showMessage("No database loaded. Please create or load a database first.", 'error');
+                return;
+            }
+
+            searchChunksButton.disabled = true;
+            modelStatus.textContent = "Generating query embedding and searching...";
+            searchResultsArea.innerHTML = '<p>Searching...</p>';
+            llmPromptGroup.style.display = 'none';
+            llmPromptOutput.value = '';
+            llmJsonPromptGroup.style.display = 'none';
+            llmJsonPromptOutput.value = '';
+
+            try {
+                const queryOutput = await embeddingPipeline(queryText, { pooling: 'mean', normalize: true });
+                const queryEmbedding = Array.from(queryOutput.data);
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const embeddedChunks = allItems.filter(item => item.id !== COUNTER_KEY && item.isEmbedded && item.embedding);
+
+                    if (embeddedChunks.length === 0) {
+                        searchResultsArea.innerHTML = '<p>No embedded chunks available to search.</p>';
+                        showMessage("No embedded chunks found. Please add text and generate embeddings first.", 'info');
+                        modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+                        searchChunksButton.disabled = false;
+                        return;
+                    }
+
+                    const rankedResults = [];
+                    for (const chunk of embeddedChunks) {
+                        const similarity = cosineSimilarity(queryEmbedding, chunk.embedding);
+                        rankedResults.push({ chunk: chunk, similarity: similarity });
+                    }
+
+                    rankedResults.sort((a, b) => b.similarity - a.similarity);
+
+                    const topN = 5;
+                    searchResultsArea.innerHTML = '<h3>Top Relevant Chunks:</h3>';
+                    let promptContextPlain = [];
+                    let promptContextJson = [];
+                    let relevantChunksFound = 0;
+
+                    if (rankedResults.length > 0) {
+                        const resultsList = document.createElement('div');
+                        for (const result of rankedResults) {
+                            if (relevantChunksFound >= topN) break;
+                            if (result.similarity > 0) {
+                                const resultDiv = document.createElement('div');
+                                resultDiv.classList.add('search-result-item');
+                                resultDiv.innerHTML = `
+                                    <p><strong>Similarity:</strong> ${(result.similarity * 100).toFixed(2)}%</p>
+                                    <p><strong>Source:</strong> ${result.chunk.source}</p>
+                                    <p><strong>Content:</strong> ${result.chunk.content.length > 200 ? result.chunk.content.substring(0, 200) + '...' : result.chunk.content}</p>
+                                `;
+                                resultsList.appendChild(resultDiv);
+                                promptContextPlain.push(`Chunk ${relevantChunksFound + 1} (Source: ${result.chunk.source}): ${result.chunk.content}`);
+                                promptContextJson.push({
+                                    id: result.chunk.id,
+                                    source: result.chunk.source,
+                                    content: result.chunk.content,
+                                    similarity: result.similarity
+                                });
+                                relevantChunksFound++;
+                            }
+                        }
+                        if (relevantChunksFound === 0) {
+                             searchResultsArea.innerHTML = '<p>No relevant chunks found for this query (similarity too low).</p>';
+                        } else {
+                            searchResultsArea.appendChild(resultsList);
+
+                            const llmPrompt = `Based on the following information, answer the question:\n\nInformation:\n${promptContextPlain.join('\n\n')}\n\nQuestion: ${queryText}\n\nAnswer:`;
+                            llmPromptOutput.value = llmPrompt;
+                            llmPromptGroup.style.display = 'block';
+
+                            const llmJsonPrompt = {
+                                query: queryText,
+                                context: promptContextJson,
+                                format_instructions: "Please answer based on the provided context."
+                            };
+                            llmJsonPromptOutput.value = JSON.stringify(llmJsonPrompt, null, 2);
+                            llmJsonPromptGroup.style.display = 'block';
+                        }
+
+                    } else {
+                        searchResultsArea.innerHTML = '<p>No relevant chunks found.</p>';
+                    }
+
+                    showMessage("Search complete!", 'success');
+                    modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
+
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error retrieving chunks for search:", event.target.error);
+                    showMessage("Error retrieving chunks for search: " + event.target.error?.message, 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to perform search:", error);
+                showMessage("Failed to perform search due to model or database error.", 'error');
+            } finally {
+                searchChunksButton.disabled = false;
+            }
+        }
+
+        // Function to copy LLM prompt (plain text) to clipboard
+        function copyPromptToClipboard() {
+            llmPromptOutput.select();
+            llmPromptOutput.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showMessage('Plain text prompt copied to clipboard!', 'success');
+            } catch (err) {
+                console.error('Failed to copy prompt: ', err);
+                showMessage('Failed to copy prompt.', 'error');
+            }
+        }
+
+        // Function to copy LLM prompt (JSON) to clipboard
+        function copyJsonPromptToClipboard() {
+            llmJsonPromptOutput.select();
+            llmJsonPromptOutput.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showMessage('JSON prompt copied to clipboard!', 'success');
+            } catch (err) {
+                console.error('Failed to copy JSON prompt: ', err);
+                showMessage('Failed to copy JSON prompt.', 'error');
+            }
+        }
+
+        // --- CSV Input/Output Functions ---
+        async function loadCsvData() {
+            const file = csvFileInput.files[0];
+            if (!file) {
+                showMessage("Please select a CSV file.", 'info');
+                return;
+            }
+            if (!db) {
+                showMessage("No database loaded. Please create or load a database first to import CSV.", 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csvText = e.target.result;
+                const lines = csvText.split('\n');
+                let successfulImports = 0;
+                let failedImports = 0;
+
+                const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const contentIndex = header.indexOf('content');
+                const sourceIndex = header.indexOf('source');
+
+                if (contentIndex === -1 || sourceIndex === -1) {
+                    showMessage("CSV must contain 'content' and 'source' columns.", 'error');
+                    return;
+                }
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line === '') continue;
+
+                    const parts = line.split(',');
+
+                    if (parts.length > Math.max(contentIndex, sourceIndex)) {
+                        const content = parts[contentIndex].trim();
+                        const source = parts[sourceIndex].trim() || 'CSV Import';
+                        try {
+                            await saveNewChunk(content, source);
+                            successfulImports++;
+                        } catch (error) {
+                            console.error("Error importing CSV row:", line, error);
+                            failedImports++;
+                        }
+                    } else {
+                        failedImports++;
+                        console.warn("Skipping malformed CSV row:", line);
+                    }
+                }
+                showMessage(`CSV import complete. Successfully added: ${successfulImports} chunks. Failed: ${failedImports}.`, 'success');
+                displayChunks();
+                updateStats();
+            };
+            reader.onerror = () => {
+                showMessage("Error reading CSV file.", 'error');
+            };
+            reader.readAsText(file);
+        }
+
+        async function downloadCsvData() {
+            try {
+                if (!db) {
+                    showMessage("No database loaded to download from.", 'info');
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const allItemsRequest = objectStore.getAll();
+
+                allItemsRequest.onsuccess = (event) => {
+                    const allItems = event.target.result;
+                    const chunks = allItems.filter(item => item.id !== COUNTER_KEY);
+
+                    if (chunks.length === 0) {
+                        showMessage("No data to download.", 'info');
+                        return;
+                    }
+
+                    let csvContent = "number,content,source\n";
+
+                    chunks.forEach(chunk => {
+                        const number = chunk.id.split('_')[1];
+                        const escapedContent = `"${chunk.content.replace(/"/g, '""')}"`;
+                        const escapedSource = `"${chunk.source.replace(/"/g, '""')}"`;
+                        csvContent += `${number},${escapedContent},${escapedSource}\n`;
+                    });
+
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${currentDBName}_data.csv`; // Use current DB name in filename
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                    showMessage("Data downloaded as CSV!", 'success');
+                };
+
+                allItemsRequest.onerror = (event) => {
+                    console.error("Error fetching data for CSV download:", event.target.error);
+                    showMessage("Error fetching data for CSV download.", 'error');
+                };
+
+            } catch (error) {
+                console.error("Failed to download CSV:", error);
+                showMessage("Failed to download CSV due to database error.", 'error');
+            }
+        }
+
+        // --- Database Management Functions ---
+
+        // Gets list of RAG databases stored in localStorage
+        function getRAGDBList() {
+            const dbListString = localStorage.getItem(DB_LIST_KEY);
+            return dbListString ? JSON.parse(dbListString) : [];
+        }
+
+        // Saves updated list of RAG databases to localStorage
+        function saveRAGDBList(dbList) {
+            localStorage.setItem(DB_LIST_KEY, JSON.stringify(dbList));
+        }
+
+        // Populates the database selector dropdown
+        function populateDbSelector() {
+            dbSelector.innerHTML = ''; // Clear existing options
+            const dbList = getRAGDBList();
+            if (dbList.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No databases found';
+                dbSelector.appendChild(option);
+                loadDbButton.disabled = true;
+                deleteCurrentDbButton.disabled = true;
+                return;
+            }
+
+            dbList.forEach(dbName => {
+                const option = document.createElement('option');
+                option.value = dbName;
+                option.textContent = dbName;
+                dbSelector.appendChild(option);
+            });
+
+            // Set selected option to currentDBName if it exists
+            if (currentDBName && dbList.includes(currentDBName)) {
+                dbSelector.value = currentDBName;
+            } else if (dbList.length > 0) {
+                dbSelector.value = dbList[0]; // Select the first one if no currentDBName
+            }
+            loadDbButton.disabled = false;
+            deleteCurrentDbButton.disabled = false;
+        }
+
+        // Handles loading a selected database
+        async function loadSelectedDatabase() {
+            const selectedDbName = dbSelector.value;
+            if (selectedDbName && selectedDbName !== currentDBName) {
+                try {
+                    await openDB(selectedDbName);
+                    displayChunks();
+                    updateStats();
+                } catch (error) {
+                    console.error("Error loading selected database:", error);
+                }
+            } else if (selectedDbName === currentDBName) {
+                showMessage(`Database '${selectedDbName}' is already loaded.`, 'info');
+            } else {
+                showMessage("Please select a database to load.", 'info');
+            }
+        }
+
+        // Handles creating a new database
+        async function createNewDatabase() {
+            const newName = newDbNameInput.value.trim();
+            if (!newName) {
+                showMessage("Please enter a name for the new database.", 'info');
+                return;
+            }
+            if (getRAGDBList().includes(newName)) {
+                showMessage(`Database '${newName}' already exists. Please choose a different name or load it.`, 'info');
+                return;
+            }
+
+            try {
+                await openDB(newName);
+                let dbList = getRAGDBList();
+                dbList.push(newName);
+                saveRAGDBList(dbList);
+                populateDbSelector();
+                newDbNameInput.value = ''; // Clear input
+                showMessage(`Database '${newName}' created and loaded!`, 'success');
+                displayChunks(); // Refresh display for new empty DB
+                updateStats();
+            } catch (error) {
+                console.error("Error creating new database:", error);
+                showMessage(`Failed to create database '${newName}'.`, 'error');
+            }
+        }
+
+        // Handles deleting the current database
+        async function deleteCurrentDatabase() {
+            if (!currentDBName) {
+                showMessage("No database is currently loaded to delete.", 'info');
+                return;
+            }
+
+            const confirmDelete = window.confirm(`Are you sure you want to delete the database '${currentDBName}'? This action cannot be undone.`);
+            if (!confirmDelete) {
+                return;
+            }
+
+            try {
+                if (db) {
+                    db.close(); // Close the connection before deleting
+                    db = null;
+                }
+
+                const request = indexedDB.deleteDatabase(currentDBName);
+                request.onsuccess = () => {
+                    console.log(`Database '${currentDBName}' deleted successfully.`);
+                    showMessage(`Database '${currentDBName}' deleted!`, 'success');
+
+                    let dbList = getRAGDBList();
+                    dbList = dbList.filter(name => name !== currentDBName);
+                    saveRAGDBList(dbList);
+
+                    currentDBName = null;
+                    localStorage.removeItem(LAST_USED_DB_KEY);
+                    currentDbNameDisplay.textContent = 'N/A';
+                    populateDbSelector(); // Re-populate dropdown
+
+                    // Attempt to load the first available DB or initialize a default one
+                    if (dbList.length > 0) {
+                        loadSelectedDatabase(); // Loads the first one in the list
+                    } else {
+                        // If no DBs left, initialize a default one for the user
+                        const defaultDb = 'default_rag_db';
+                        newDbNameInput.value = defaultDb; // Pre-fill for convenience
+                        createNewDatabase(); // Creates and loads the default DB
+                    }
+                    displayChunks(); // Refresh display
+                    updateStats();
+                };
+                request.onerror = (event) => {
+                    console.error("Error deleting database:", event.target.error);
+                    showMessage(`Failed to delete database '${currentDBName}': ${event.target.error?.message}`, 'error');
+                };
+            } catch (error) {
+                console.error("Error initiating database deletion:", error);
+                showMessage("Failed to initiate database deletion.", 'error');
+            }
+        }
+
+
+        // Add event listeners
+        generateEmbeddingsButton.addEventListener('click', generateEmbeddingsForChunks);
+        searchChunksButton.addEventListener('click', searchRelevantChunks);
+        copyPromptButton.addEventListener('click', copyPromptToClipboard);
+        copyJsonPromptButton.addEventListener('click', copyJsonPromptToClipboard);
+        loadCsvButton.addEventListener('click', loadCsvData);
+        downloadCsvButton.addEventListener('click', downloadCsvData);
+
+        // New DB management event listeners
+        dbSelector.addEventListener('change', loadSelectedDatabase);
+        loadDbButton.addEventListener('click', loadSelectedDatabase);
+        createNewDbButton.addEventListener('click', createNewDatabase);
+        deleteCurrentDbButton.addEventListener('click', deleteCurrentDatabase);
+
+
+        // Initialize when page loads
+        window.onload = async () => {
+            // First, populate the selector
+            populateDbSelector();
+
+            let lastUsedDb = localStorage.getItem(LAST_USED_DB_KEY);
+            const existingDbList = getRAGDBList();
+
+            if (!lastUsedDb && existingDbList.length > 0) {
+                // If no last used, but existing DBs, load the first one
+                lastUsedDb = existingDbList[0];
+            } else if (!lastUsedDb && existingDbList.length === 0) {
+                // If no last used and no existing DBs, suggest creating a default one
+                lastUsedDb = 'default_rag_db';
+                newDbNameInput.value = lastUsedDb; // Pre-fill
+                showMessage("No RAG database found. A 'default_rag_db' has been suggested. Click 'Create New DB' to start.", 'info');
+                // Don't auto-create, let the user click "Create New DB"
+                currentDbNameDisplay.textContent = 'N/A (pending)';
+                return; // Exit onload, as user interaction is needed
+            }
+
+            if (lastUsedDb) {
+                try {
+                    await openDB(lastUsedDb);
+                    await initializeModel(); // Load the embedding model after DB is ready
+                    displayChunks();
+                    updateStats();
+                } catch (error) {
+                    console.error("Initialization failed:", error);
+                    showMessage(`Failed to load last used database '${lastUsedDb}'. Please create a new one.`, 'error');
+                    currentDbNameDisplay.textContent = 'N/A';
+                    localStorage.removeItem(LAST_USED_DB_KEY); // Clear invalid last used
+                    populateDbSelector(); // Re-populate in case something changed
+                }
+            } else {
+                // Fallback if somehow still no DB name after checks
+                showMessage("Please create a new RAG database to begin.", 'info');
+                currentDbNameDisplay.textContent = 'N/A';
+            }
+        };
+    </script>
+</body>
+</html>
