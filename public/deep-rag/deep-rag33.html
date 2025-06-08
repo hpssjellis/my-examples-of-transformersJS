@@ -1113,40 +1113,37 @@
 
         /**
          * Parses a single CSV line, handling quoted fields and escaped quotes.
+         * This uses a state-machine approach for robustness.
          * @param {string} line The CSV line to parse.
          * @returns {Array<string>} An array of parsed fields.
          */
         function parseCsvLine(line) {
             const result = [];
-            const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^,]*))(?:,|$)/g;
-            let match;
-            let lastIndex = 0; // Tracks the last index where the regex successfully matched
-
-            while ((match = regex.exec(line)) !== null) {
-                // Safeguard against infinite loops: if no progress is made (zero-width match and lastIndex doesn't change)
-                if (regex.lastIndex === lastIndex && match[0].length === 0) {
-                    console.warn("CSV parsing infinite loop detected in line:", line.substring(lastIndex));
-                    // Attempt to push any remaining unparsed content as a single field
-                    if (lastIndex < line.length) {
-                        result.push(line.substring(lastIndex));
+            let inQuote = false;
+            let currentField = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    // Handle escaped double quote: "" becomes "
+                    if (inQuote && i + 1 < line.length && line[i + 1] === '"') {
+                        currentField += '"';
+                        i++; // Skip the next character as it's part of the escaped quote
+                    } else {
+                        // Toggle inQuote state
+                        inQuote = !inQuote;
                     }
-                    break; // Exit the loop
-                }
-                lastIndex = regex.lastIndex; // Update for the next iteration's progress check
-
-                let value;
-                if (match[1] !== undefined) {
-                    // This means a quoted field was matched (group 1)
-                    value = match[1].replace(/\"\"/g, '\"'); // Unescape double quotes
-                } else if (match[2] !== undefined) {
-                    // This means an unquoted field was matched (group 2)
-                    value = match[2];
+                } else if (char === ',' && !inQuote) {
+                    // End of an unquoted field or a quoted field that just closed
+                    result.push(currentField);
+                    currentField = '';
                 } else {
-                    // This case should ideally not be hit with a robust regex, but for safety:
-                    value = ''; // Treat as an empty field
+                    // Add character to current field
+                    currentField += char;
                 }
-                result.push(value);
             }
+            // Add the last field (after the last comma or if no commas)
+            result.push(currentField);
+
             return result;
         }
 
@@ -1179,24 +1176,32 @@
                 }
 
                 const chunksToSave = [];
+                const MIN_MEANINGFUL_CONTENT_LENGTH = 10; // Only import content longer than this
+
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (line === '') continue;
+                    if (line === '') continue; // Skip empty lines
 
                     const parts = parseCsvLine(line); // Use the new parsing function
 
-                    if (parts.length > Math.max(contentIndex, sourceIndex)) {
-                        const content = parts[contentIndex]?.trim();
-                        const source = parts[sourceIndex]?.trim() || 'CSV Import';
-                        if (content) { // Only add if content is not empty
+                    // Ensure indices are within bounds for content and source columns
+                    if (contentIndex < parts.length && sourceIndex < parts.length) {
+                        let content = parts[contentIndex]?.trim() || ''; // Get content, default to empty string
+                        let source = parts[sourceIndex]?.trim() || 'CSV Import';
+
+                        // Remove common control characters that might interfere or be unwanted
+                        content = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+
+                        // Filter out empty or extremely short/meaningless content after cleaning
+                        if (content.length >= MIN_MEANINGFUL_CONTENT_LENGTH) {
                             chunksToSave.push({ content, source });
                         } else {
-                            failedImports++; // Count empty content lines as failed
-                            console.warn("Skipping CSV row with empty content:", line);
+                            failedImports++;
+                            console.warn(`Skipping CSV row with content too short or malformed (length ${content.length}): "${line}"`);
                         }
                     } else {
                         failedImports++;
-                        console.warn("Skipping malformed CSV row (not enough columns or invalid format):", line);
+                        console.warn("Skipping malformed CSV row (not enough columns for 'content' or 'source'):", line);
                     }
                 }
 
@@ -1229,6 +1234,7 @@
                             if (autoChunk && chunkData.content.length > chunkSize) {
                                 currentLineChunks = splitTextIntoChunks(chunkData.content, chunkSize, chunkData.source);
                             } else {
+                                // If not auto-chunking or if content is smaller than chunk size, treat as a single chunk
                                 currentLineChunks.push(chunkData);
                             }
 
@@ -1252,7 +1258,7 @@
                                     console.log(`DEBUG: Added chunk ${chunkId} from CSV to transaction.`);
                                 } catch (e) {
                                     console.error(`DEBUG: Failed to add chunk ${chunkId} from CSV to transaction:`, e);
-                                    failedImports++;
+                                    failedImports++; // Increment failed count for DB errors as well
                                 }
                             });
                         });
@@ -1262,7 +1268,7 @@
                     counterRequest.onerror = (event) => {
                         console.error("Counter request error during CSV import preparation:", event.target.error);
                         showMessage(`Error preparing CSV import: ${event.target.error?.message}`, 'error');
-                        failedImports += chunksToSave.length - successfulImports; // Adjust failed count
+                        // No need to adjust failedImports here, as it's already accounted for in the loop or will be caught by transaction error
                     };
 
                     transaction.oncomplete = () => {
