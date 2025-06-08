@@ -478,6 +478,7 @@
                             const deleteButton = document.createElement('button');
                             deleteButton.classList.add('delete-button');
                             deleteButton.textContent = 'Delete this';
+                            console.log(window.deleteChunk)
                           //  deleteButton.addEventListener('click', () => deleteChunk(chunk.id)); // Attach event listener here
                             deleteButton.addEventListener('click', async () => await deleteChunk(chunk.id));
                             console.log('added delete button')
