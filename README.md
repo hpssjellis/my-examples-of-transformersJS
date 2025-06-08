@@ -48,4 +48,11 @@ ThreeJS webGPU
 
 
 
-Ai-Agents coming later.
+Ai-Agents coming later (Actually I did it but the LLM was too slow thinking.
+
+
+RAG
+
+
+![image](https://github.com/user-attachments/assets/9455df72-d795-4d13-9dd6-c3dbbcb5beeb)
+
