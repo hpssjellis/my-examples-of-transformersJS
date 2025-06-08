@@ -5,485 +5,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IndexedDB Text Chunks for Embedding</title>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f0f0; /* Light background */
-            margin: 0;
-            padding: 20px; /* Padding for responsive layout */
-            box-sizing: border-box;
-        }
-        .main-content {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
-        }
-        h1 {
-            font-size: 1.5rem; /* Equivalent to text-2xl */
-            font-weight: bold; /* Equivalent to font-bold */
-            margin-bottom: 1rem; /* Equivalent to mb-4 */
-            color: #333; /* Equivalent to text-gray-800 */
-            text-align: center;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-            font-size: 0.875rem; /* Equivalent to text-sm */
-        }
-        input[type="text"], input[type="number"], textarea, select { /* Added select */
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
-        input[type="checkbox"] {
-            margin-right: 8px;
-        }
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-            margin-top: 10px;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .generate-embeddings-button {
-            background-color: #3b82f6; /* Equivalent to bg-blue-500 */
-        }
-        .generate-embeddings-button:hover {
-            background-color: #2563eb; /* Equivalent to hover:bg-blue-600 */
-        }
-        .search-button {
-            background-color: #007bff; /* Blue for search */
-        }
-        .search-button:hover {
-            background-color: #0056b3; /* Darker blue */
-        }
-        .copy-button { /* New style for copy button */
-            background-color: #6c757d; /* Gray for copy */
-            margin-top: 5px;
-        }
-        .copy-button:hover {
-            background-color: #5a6268; /* Darker gray */
-        }
-        .stored-items {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .stored-items h2 {
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 1.25rem; /* Equivalent to text-xl */
-            font-weight: 600; /* Equivalent to font-semibold */
-        }
-        .stored-item {
-            background-color: #e9ecef; /* Light gray */
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 12px;
-            word-wrap: break-word;
-            border-left: 4px solid #4CAF50; /* Green left border */
-        }
-        .item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-        }
-        .item-metadata {
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 8px;
-        }
-        .item-content {
-            line-height: 1.4;
-            color: #444;
-        }
-        .delete-button {
-            background-color: #dc3545; /* Red */
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            width: auto;
-            margin-top: 0;
-            margin-left: 10px;
-        }
-        .delete-button:hover {
-            background-color: #c82333; /* Darker red */
-        }
-        .view-button { /* New style for View button */
-            background-color: #17a2b8; /* Info blue/cyan */
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            width: auto;
-            margin-top: 0;
-            margin-left: 5px; /* Adjust spacing */
-        }
-        .view-button:hover {
-            background-color: #138496; /* Darker info blue/cyan */
-        }
-        .message-box {
-            background-color: #fff3cd; /* Light yellow */
-            color: #664d03; /* Dark yellow text */
-            border: 1px solid #ffecb5; /* Yellow border */
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            display: none; /* Hidden by default */
-        }
-        .stats {
-            background-color: #f8f9fa; /* Lighter gray */
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            color: #495057; /* Darker gray text */
-        }
-        .model-status {
-            background-color: #e2f0fb; /* Light blue */
-            color: #004085; /* Dark blue text */
-            border: 1px solid #b8daff; /* Blue border */
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        .query-section, .data-io-section, .db-management-section { /* Combined for similar styling */
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .search-result-item {
-            background-color: #dbeafe; /* Lighter blue */
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            word-wrap: break-word;
-            border-left: 4px solid #3b82f6; /* Blue left border */
-        }
-        .search-result-item strong {
-            color: #1e40af; /* Darker blue for strong text */
-        }
-        .search-results-area {
-            margin-top: 15px;
-            background-color: #eff6ff; /* Very light blue */
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #bfdbfe; /* Light blue border */
-        }
-        .llm-prompt-output, .llm-json-prompt-output { /* Styles for both prompt textareas */
-            width: 100%;
-            min-height: 150px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 0.9rem;
-            margin-top: 10px;
-            resize: vertical;
-            background-color: #f9f9f9;
-        }
-        .csv-input-group { /* Specific styling for CSV file input */
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .csv-input-group input[type="file"] {
-            flex-grow: 1;
-            padding: 8px; /* Adjust padding for file input */
-        }
-        .csv-input-group button {
-            width: auto; /* Adjust button width */
-            margin-top: 0; /* Remove top margin */
-        }
-        .download-button {
-            background-color: #17a2b8; /* Info blue/cyan */
-            margin-bottom: 10px; /* Space below button */
-        }
-        .download-button:hover {
-            background-color: #138496; /* Darker info blue/cyan */
-        }
-        /* Database management specific styles */
-        .db-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
-            margin-top: 10px;
-        }
-        .db-controls button {
-            flex: 1; /* Distribute space evenly */
-            min-width: 120px; /* Minimum width for buttons */
-        }
-        .db-select-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .db-select-group select {
-            flex-grow: 1;
-        }
-        .db-delete-button {
-            background-color: #dc3545; /* Red for delete */
-        }
-        .db-delete-button:hover {
-            background-color: #c82333; /* Darker red */
-        }
-        .db-create-button {
-            background-color: #28a745; /* Green for create */
-        }
-        .db-create-button:hover {
-            background-color: #218838; /* Darker green */
-        }
-        .db-label {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #555;
-            text-align: center;
-        }
-        /* Style for the checkbox group to show/hide chunks */
-        .show-chunks-group {
-            display: flex;
-            align-items: center;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-        .show-chunks-group input {
-            width: auto; /* Override 100% width */
-            margin-right: 10px;
-        }
-
-        /* Modal specific styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background-color: #ffffff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 700px;
-            max-height: 80vh; /* Limit height to prevent overflow */
-            overflow-y: auto; /* Enable scrolling for long content */
-            position: relative;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: #333;
-        }
-        .modal-close-button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            padding: 0;
-        }
-        .modal-close-button:hover {
-            color: #333;
-        }
-        .modal-body pre {
-            white-space: pre-wrap; /* Preserve whitespace and wrap text */
-            word-wrap: break-word;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            line-height: 1.5;
-            color: #444;
-            background-color: #f8f8f8;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-    </style>
 </head>
-<body>
-    <div class="main-content">
-        <h1>Text Chunks for Embedding</h1>
+<body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f0f0; margin: 0; padding: 20px; box-sizing: border-box;">
+    <div class="main-content" style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 100%; max-width: 600px;">
+        <h1 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #333; text-align: center;">Text Chunks for Embedding</h1>
 
-        <div class="stats" id="statsArea">
+        <div class="stats" id="statsArea" style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; color: #495057;">
             <strong>Database Stats:</strong> Loading...
         </div>
 
-        <div class="model-status" id="modelStatus">
+        <div class="model-status" id="modelStatus" style="background-color: #e2f0fb; color: #004085; border: 1px solid #b8daff; padding: 10px; border-radius: 4px; margin-top: 10px; text-align: center; font-size: 0.9rem;">
             Loading embedding model...
         </div>
 
         <!-- Database Management Section -->
-        <div class="db-management-section">
+        <div class="db-management-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
             <h2>Database Management:</h2>
-            <div class="db-select-group">
-                <label for="dbSelector">Select DB:</label>
-                <select id="dbSelector"></select>
-                <button id="loadDbButton" style="background-color: #007bff;">Load Selected</button>
+            <div class="db-select-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <label for="dbSelector" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Select DB:</label>
+                <select id="dbSelector" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; flex-grow: 1;"></select>
+                <button id="loadDbButton" style="background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: auto; margin-top: 0;">Load Selected</button>
             </div>
-            <div class="input-group">
-                <label for="newDbNameInput">New DB Name:</label>
-                <input type="text" id="newDbNameInput" placeholder="e.g., my_new_rag_db">
+            <div class="input-group" style="margin-bottom: 15px;">
+                <label for="newDbNameInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">New DB Name:</label>
+                <input type="text" id="newDbNameInput" placeholder="e.g., my_new_rag_db" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem;">
             </div>
-            <div class="db-controls">
-                <button id="createNewDbButton" class="db-create-button">Create New DB</button>
-                <button id="deleteCurrentDbButton" class="db-delete-button">Delete Current DB</button>
+            <div class="db-controls" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                <button id="createNewDbButton" style="background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; transition: background-color 0.3s ease; flex: 1; min-width: 120px;">Create New DB</button>
+                <button id="deleteCurrentDbButton" style="background-color: #dc3545; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; transition: background-color 0.3s ease; flex: 1; min-width: 120px;">Delete Current DB</button>
             </div>
-            <p id="currentDbInfo" class="db-label">Current DB: <span id="currentDbNameDisplay">N/A</span></p>
+            <p id="currentDbInfo" style="margin-top: 10px; font-size: 0.9rem; color: #555; text-align: center;">Current DB: <span id="currentDbNameDisplay">N/A</span></p>
         </div>
 
 
         <!-- Text Entry Section -->
-        <div class="input-group">
-            <label for="textInput">Text Content:</label>
-            <textarea id="textInput" placeholder="Enter text to be chunked and embedded..."></textarea>
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label for="textInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Text Content:</label>
+            <textarea id="textInput" placeholder="Enter text to be chunked and embedded..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; min-height: 100px; resize: vertical;"></textarea>
         </div>
 
-        <div class="input-group">
-            <label for="sourceInput">Source (optional):</label>
-            <input type="text" id="sourceInput" placeholder="e.g., document.pdf, chapter 1, etc.">
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label for="sourceInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Source (optional):</label>
+            <input type="text" id="sourceInput" placeholder="e.g., document.pdf, chapter 1, etc." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem;">
         </div>
 
-        <div class="input-group">
-            <label for="chunkSizeInput">Chunk Size (characters):</label>
-            <input type="number" id="chunkSizeInput" value="500" min="100" max="2000" placeholder="500">
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label for="chunkSizeInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Chunk Size (characters):</label>
+            <input type="number" id="chunkSizeInput" value="500" min="100" max="2000" placeholder="500" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem;">
         </div>
 
-        <div class="input-group">
-            <label>
-                <input type="checkbox" id="autoChunkCheckbox" checked>
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">
+                <input type="checkbox" id="autoChunkCheckbox" checked style="margin-right: 8px;">
                 Auto-chunk large text (splits text longer than chunk size)
             </label>
         </div>
 
-        <button id="saveChunkButton">Process & Add Text</button>
-        <button id="generateEmbeddingsButton" class="generate-embeddings-button">Generate Embeddings</button>
+        <button id="saveChunkButton" style="background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; transition: background-color 0.3s ease;">Process & Add Text</button>
+        <button id="generateEmbeddingsButton" style="background-color: #3b82f6; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; transition: background-color 0.3s ease;">Generate Embeddings</button>
 
-        <div id="messageBox" class="message-box"></div>
+        <div id="messageBox" style="background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; padding: 10px; border-radius: 4px; margin-top: 10px; display: none;"></div>
 
         <!-- Moved this outside the 'stored-items' div -->
-        <div class="show-chunks-group">
-            <input type="checkbox" id="showChunksCheckbox" checked>
+        <div class="show-chunks-group" style="display: flex; align-items: center; margin-top: 20px; margin-bottom: 10px; font-weight: bold; color: #333;">
+            <input type="checkbox" id="showChunksCheckbox" checked style="width: auto; margin-right: 10px;">
             <label for="showChunksCheckbox">Show Stored Chunks</label>
         </div>
 
-        <div class="stored-items">
-            <h2>Stored Text Chunks:</h2>
+        <div class="stored-items" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <h2 style="margin-bottom: 10px; color: #333; font-size: 1.25rem; font-weight: 600;">Stored Text Chunks:</h2>
             <div id="displayArea">
                 <p>No text chunks stored yet.</p>
             </div>
         </div>
 
         <!-- Data Input/Output Section -->
-        <div class="data-io-section">
+        <div class="data-io-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
             <h2>Data Import/Export:</h2>
-            <div class="csv-input-group">
-                <label for="csvFileInput">Upload CSV:</label>
-                <input type="file" id="csvFileInput" accept=".csv">
-                <button id="loadCsvButton">Load CSV</button>
+            <div class="csv-input-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <label for="csvFileInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Upload CSV:</label>
+                <input type="file" id="csvFileInput" accept=".csv" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; flex-grow: 1; padding: 8px;">
+                <button id="loadCsvButton" style="background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: auto; margin-top: 0; transition: background-color 0.3s ease;">Load CSV</button>
             </div>
-            <button id="downloadCsvButton" class="download-button">Download Data as CSV</button>
+            <button id="downloadCsvButton" style="background-color: #17a2b8; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; transition: background-color 0.3s ease; margin-bottom: 10px;">Download Data as CSV</button>
         </div>
 
 
         <!-- Query Section -->
-        <div class="query-section">
+        <div class="query-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
             <h2>Query & Retrieve:</h2>
-            <div class="input-group">
-                <label for="queryInput">Your Query:</label>
-                <textarea id="queryInput" placeholder="Enter your question here..."></textarea>
+            <div class="input-group" style="margin-bottom: 15px;">
+                <label for="queryInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Your Query:</label>
+                <textarea id="queryInput" placeholder="Enter your question here..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; min-height: 150px; resize: vertical; background-color: #f9f9f9;"></textarea>
             </div>
-            <div class="input-group">
-                <label for="topResponsesInput">Number of Top Responses:</label>
-                <input type="number" id="topResponsesInput" value="5" min="1" max="20">
+            <div class="input-group" style="margin-bottom: 15px;">
+                <label for="topResponsesInput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">Number of Top Responses:</label>
+                <input type="number" id="topResponsesInput" value="5" min="1" max="20" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem;">
             </div>
-            <button id="searchChunksButton" class="search-button">Search Chunks</button>
-            <div id="searchResultsArea" class="search-results-area">
+            <button id="searchChunksButton" style="background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; transition: background-color 0.3s ease;">Search Chunks</button>
+            <div id="searchResultsArea" style="margin-top: 15px; background-color: #eff6ff; padding: 15px; border-radius: 4px; border: 1px solid #bfdbfe;">
                 <p>Search results will appear here.</p>
             </div>
 
             <!-- LLM Prompt Section (Plain Text) -->
-            <div class="input-group" id="llmPromptGroup" style="display: none;">
-                <label for="llmPromptOutput">LLM Prompt (Plain Text):</label>
-                <textarea id="llmPromptOutput" class="llm-prompt-output" readonly></textarea>
-                <button id="copyPromptButton" class="copy-button">Copy Prompt to Clipboard</button>
+            <div class="input-group" id="llmPromptGroup" style="display: none; margin-bottom: 15px;">
+                <label for="llmPromptOutput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">LLM Prompt (Plain Text):</label>
+                <textarea id="llmPromptOutput" readonly style="width: 100%; min-height: 150px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; margin-top: 10px; resize: vertical; background-color: #f9f9f9;"></textarea>
+                <button id="copyPromptButton" style="background-color: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 5px; transition: background-color 0.3s ease;">Copy Prompt to Clipboard</button>
             </div>
 
             <!-- New LLM Prompt Section (JSON Format) -->
-            <div class="input-group" id="llmJsonPromptGroup" style="display: none; margin-top: 20px;">
-                <label for="llmJsonPromptOutput">LLM Prompt (JSON Format):</label>
-                <textarea id="llmJsonPromptOutput" class="llm-json-prompt-output" readonly></textarea>
-                <button id="copyJsonPromptButton" class="copy-button">Copy JSON Prompt to Clipboard</button>
+            <div class="input-group" id="llmJsonPromptGroup" style="display: none; margin-top: 20px; margin-bottom: 15px;">
+                <label for="llmJsonPromptOutput" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.875rem;">LLM Prompt (JSON Format):</label>
+                <textarea id="llmJsonPromptOutput" readonly style="width: 100%; min-height: 150px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; margin-top: 10px; resize: vertical; background-color: #f9f9f9;"></textarea>
+                <button id="copyJsonPromptButton" style="background-color: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 5px; transition: background-color 0.3s ease;">Copy JSON Prompt to Clipboard</button>
             </div>
         </div>
     </div>
 
     <!-- Chunk Content Modal -->
-    <div id="chunkModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalChunkTitle">Chunk Content</h3>
-                <button id="modalCloseButton" class="modal-close-button">&times;</button>
+    <div id="chunkModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000;">
+        <div class="modal-content" style="background-color: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto; position: relative;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 id="modalChunkTitle" style="margin: 0; font-size: 1.2rem; color: #333;">Chunk Content</h3>
+                <button id="modalCloseButton" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0;">&times;</button>
             </div>
             <div class="modal-body">
-                <pre id="modalChunkContent"></pre>
+                <pre id="modalChunkContent" style="white-space: pre-wrap; word-wrap: break-word; font-family: sans-serif; font-size: 1rem; line-height: 1.5; color: #444; background-color: #f8f8f8; padding: 10px; border-radius: 4px; border: 1px solid #ddd;"></pre>
             </div>
         </div>
     </div>
@@ -682,10 +330,11 @@
          * @returns {Array<Object>} An array of chunk objects.
          */
         function splitTextIntoChunks(text, chunkSize, source) {
-            const chunks = [];
+            const rawChunks = [];
             let currentPosition = 0;
             let chunkIndex = 1;
 
+            // Pass 1: Initial splitting with sentence boundary preference
             while (currentPosition < text.length) {
                 const endPosition = Math.min(currentPosition + chunkSize, text.length);
                 let chunkContent = text.substring(currentPosition, endPosition);
@@ -697,8 +346,9 @@
                         chunkContent.lastIndexOf('?'),
                         chunkContent.lastIndexOf('!')
                     );
+                    // If a sentence ends within the last 20% of the chunk and it's not the very beginning
                     if (lastSentenceEnd > chunkContent.length * 0.8 && lastSentenceEnd > 0) {
-                        // If a sentence ends near the chunk end, use that as the boundary
+                        // Use that as the boundary, include the punctuation
                         chunkContent = chunkContent.substring(0, lastSentenceEnd + 1);
                         currentPosition += lastSentenceEnd + 1;
                     } else {
@@ -709,13 +359,35 @@
                     currentPosition = endPosition;
                 }
 
-                chunks.push({
+                rawChunks.push({
                     content: chunkContent.trim(),
                     source: `${source} (part ${chunkIndex})`
                 });
                 chunkIndex++;
             }
-            return chunks;
+
+            // Pass 2: Merge small chunks
+            const finalChunks = [];
+            // Minimum threshold for a chunk, either 100 characters or 1/4 of the desired chunk size
+            const MIN_CHUNK_MERGE_THRESHOLD = Math.max(100, Math.floor(chunkSize / 4));
+
+            for (let i = 0; i < rawChunks.length; i++) {
+                const currentChunk = rawChunks[i];
+                if (currentChunk.content.length < MIN_CHUNK_MERGE_THRESHOLD && finalChunks.length > 0) {
+                    // If current chunk is too small and there's a previous chunk, merge them
+                    const lastFinalChunk = finalChunks[finalChunks.length - 1];
+                    lastFinalChunk.content += ' ' + currentChunk.content;
+                    lastFinalChunk.wordCount = lastFinalChunk.content.split(/\s+/).length;
+                    lastFinalChunk.charCount = lastFinalChunk.content.length;
+                    // Update source to reflect merging, maybe? Or keep original source of the first part.
+                    // For now, keep the original source of the first part.
+                } else {
+                    // Otherwise, add the current chunk to final chunks
+                    finalChunks.push(currentChunk);
+                }
+            }
+            console.log(`Original chunks: ${rawChunks.length}, Final chunks after merging: ${finalChunks.length}`);
+            return finalChunks;
         }
 
 
@@ -723,10 +395,9 @@
         // Now returns a Promise to indicate completion of its internal transaction
         async function saveNewChunk(content, source = 'Unknown') {
             console.log("DEBUG: saveNewChunk function is being executed."); // New log
-            return new Promise(async (resolve, reject) => {
+            return new Promise((resolve, reject) => { // Removed 'async' from here, promise constructor is synchronous
                 console.log("Adding new text chunk...");
                 if (content === "") {
-                    // showMessage("Text content cannot be empty.", 'info'); // Don't show for each if bulk
                     resolve(); // Resolve to allow bulk import to continue
                     return;
                 }
@@ -814,9 +485,6 @@
                 return;
             }
 
-            let successfulAdds = 0;
-            let failedAdds = 0;
-
             // Disable buttons during processing
             saveChunkButton.disabled = true;
             generateEmbeddingsButton.disabled = true;
@@ -825,33 +493,94 @@
 
             showMessage(`Processing ${chunksToProcess.length} chunk(s)...`);
 
-            for (const chunkData of chunksToProcess) {
-                try {
-                    await saveNewChunk(chunkData.content, chunkData.source); // Calls saveNewChunk
-                    successfulAdds++;
-                } catch (error) {
-                    console.error("Error saving chunk:", chunkData, error);
-                    failedAdds++;
+            let successfulAdds = 0;
+            let failedAdds = 0;
+
+            try {
+                if (!db) {
+                    showMessage("No database loaded. Please create or load a database first.", 'error');
+                    return;
                 }
+                
+                // Use a single transaction for all insertions
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const objectStore = transaction.objectStore(STORE_NAME);
+
+                // Fetch the current counter once
+                const counterRequest = objectStore.get(COUNTER_KEY);
+                counterRequest.onsuccess = () => {
+                    let nextIdValue = counterRequest.result ? counterRequest.result.value : 1;
+
+                    chunksToProcess.forEach(chunkData => {
+                        const chunkId = 'chunk_' + nextIdValue;
+                        const textChunk = {
+                            id: chunkId,
+                            content: chunkData.content,
+                            source: chunkData.source,
+                            timestamp: new Date().toISOString(),
+                            wordCount: chunkData.content.split(/\s+/).length,
+                            charCount: chunkData.content.length,
+                            embedding: null,
+                            embeddingModel: null,
+                            isEmbedded: false
+                        };
+                        try {
+                            objectStore.put(textChunk);
+                            nextIdValue++;
+                            successfulAdds++;
+                            console.log(`DEBUG: Added chunk ${chunkId} to transaction.`);
+                        } catch (e) {
+                            console.error(`DEBUG: Failed to add chunk ${chunkId} to transaction:`, e);
+                            failedAdds++;
+                        }
+                    });
+
+                    // Update the counter after all chunks are processed in this batch
+                    objectStore.put({ id: COUNTER_KEY, value: nextIdValue });
+
+                    transaction.oncomplete = () => {
+                        showMessage(`Batch processing complete. Successfully added: ${successfulAdds} chunks. Failed: ${failedAdds}.`, 'success');
+                        textInput.value = ''; // Clear manual input after saving
+                        sourceInput.value = '';
+                        displayChunks();
+                        updateStats();
+                        // Re-enable buttons
+                        saveChunkButton.disabled = false;
+                        generateEmbeddingsButton.disabled = false;
+                        loadCsvButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                    };
+
+                    transaction.onerror = (event) => {
+                        console.error("DEBUG: Transaction error during manual input batch:", event.target.error);
+                        showMessage(`Error during batch processing: ${event.target.error?.message}. Added: ${successfulAdds}, Failed: ${failedAdds}.`, 'error');
+                        // Re-enable buttons
+                        saveChunkButton.disabled = false;
+                        generateEmbeddingsButton.disabled = false;
+                        loadCsvButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                    };
+                };
+
+                counterRequest.onerror = (event) => {
+                    console.error("DEBUG: Counter request error during manual input process:", event.target.error);
+                    showMessage(`Error retrieving chunk counter: ${event.target.error?.message}`, 'error');
+                    // Re-enable buttons
+                    saveChunkButton.disabled = false;
+                    generateEmbeddingsButton.disabled = false;
+                    loadCsvButton.disabled = false;
+                    downloadCsvButton.disabled = false;
+                };
+
+            } catch (error) {
+                console.error("DEBUG: Unexpected error during manual input processing:", error);
+                showMessage(`Unexpected error during manual input processing: ${error.message || error}`, 'error');
+                // Re-enable buttons
+                saveChunkButton.disabled = false;
+                generateEmbeddingsButton.disabled = false;
+                loadCsvButton.disabled = false;
+                downloadCsvButton.disabled = false;
             }
-
-            textInput.value = ''; // Clear manual input after saving
-            sourceInput.value = '';
-
-            // Re-enable buttons
-            saveChunkButton.disabled = false;
-            generateEmbeddingsButton.disabled = false;
-            loadCsvButton.disabled = false;
-            downloadCsvButton.disabled = false;
-
-            if (failedAdds === 0) {
-                showMessage(`Successfully added ${successfulAdds} chunk(s)!`, 'success');
-            } else {
-                showMessage(`Added ${successfulAdds} chunk(s), failed to add ${failedAdds} chunk(s). Check console for details.`, 'error');
-            }
-
-            displayChunks();
-            updateStats();
         });
 
 
@@ -936,25 +665,25 @@
 
                         chunks.forEach(chunk => {
                             const div = document.createElement('div');
-                            div.classList.add('stored-item');
+                            div.style.cssText = 'background-color: #e9ecef; padding: 15px; border-radius: 4px; margin-bottom: 12px; word-wrap: break-word; border-left: 4px solid #4CAF50;'; /* inline styles */
                             div.setAttribute('data-chunk-id', chunk.id); // Add data attribute for easier identification
 
                             const chunkNumber = chunk.id.split('_')[1];
                             const date = new Date(chunk.timestamp).toLocaleString();
 
                             const deleteButton = document.createElement('button');
-                            deleteButton.classList.add('delete-button');
+                            deleteButton.style.cssText = 'background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; width: auto; margin-top: 0; margin-left: 10px;'; /* inline styles */
                             deleteButton.textContent = 'Delete';
                             deleteButton.addEventListener('click', () => deleteChunk(chunk.id)); // Attach event listener here
 
                             const viewButton = document.createElement('button'); // New View Button
-                            viewButton.classList.add('view-button');
+                            viewButton.style.cssText = 'background-color: #17a2b8; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; width: auto; margin-top: 0; margin-left: 5px;'; /* inline styles */
                             viewButton.textContent = 'View';
                             viewButton.addEventListener('click', () => showChunkModal(`Chunk #${chunkNumber} (Source: ${chunk.source})`, chunk.content));
 
 
                             const itemHeader = document.createElement('div');
-                            itemHeader.classList.add('item-header');
+                            itemHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; color: #333;'; /* inline styles */
                             const spanChunkNumber = document.createElement('span');
                             spanChunkNumber.textContent = `Chunk #${chunkNumber}`;
                             itemHeader.appendChild(spanChunkNumber);
@@ -969,7 +698,7 @@
                             div.appendChild(itemHeader);
 
                             const itemMetadata = document.createElement('div');
-                            itemMetadata.classList.add('item-metadata');
+                            itemMetadata.style.cssText = 'font-size: 0.8rem; color: #666; margin-bottom: 8px;'; /* inline styles */
                             itemMetadata.innerHTML = `
                                 Source: ${chunk.source} |
                                 ${chunk.wordCount} words, ${chunk.charCount} chars |
@@ -979,7 +708,7 @@
                             div.appendChild(itemMetadata);
 
                             const itemContent = document.createElement('div');
-                            itemContent.classList.add('item-content');
+                            itemContent.style.cssText = 'line-height: 1.4; color: #444;'; /* inline styles */
                             itemContent.textContent = chunk.content.length > 200 ? chunk.content.substring(0, 200) + '...' : chunk.content;
                             div.appendChild(itemContent);
                             
@@ -1038,26 +767,34 @@
             deleteCurrentDbButton.disabled = true;
             loadDbButton.disabled = true;
 
+            modelStatus.textContent = `Connecting to model resources for "${embeddingModelName}"...`; // Added this line
+
             // Progress callback function
             const progress_callback = (data) => {
-                let statusMessage = `Loading model: ${embeddingModelName}... `;
+                let statusMessage = '';
                 if (data.status === 'download') {
                     const loadedMB = (data.loaded / (1024 * 1024)).toFixed(2);
                     const totalMB = (data.total / (1024 * 1024)).toFixed(2);
                     const percentage = data.progress ? data.progress.toFixed(2) : '0.00';
-                    statusMessage = `Downloading ${data.file} (${percentage}%) - ${loadedMB}MB / ${totalMB}MB`;
+                    const fileName = data.file ? data.file.split('/').pop() : 'model file'; // Extract filename or use generic
+                    statusMessage = `Downloading ${fileName} (${percentage}%) - ${loadedMB}MB / ${totalMB}MB`;
+                    console.log(`DEBUG: Model Download Progress: ${statusMessage}`); // Added debug log
                 } else if (data.status === 'progress') {
                      // This 'progress' status is for the overall loading, after download
                     const percentage = data.progress ? data.progress.toFixed(2) : '0.00';
                     statusMessage = `Processing model files: ${percentage}%`;
+                    console.log(`DEBUG: Model Processing Progress: ${statusMessage}`); // Added debug log
                 } else if (data.status === 'ready') {
                     statusMessage = `Model ready!`;
+                    console.log(`DEBUG: Model Status: ${statusMessage}`); // Added debug log
+                } else { // Fallback for other statuses, should not typically occur if statuses are 'download', 'progress', 'ready'
+                    statusMessage = `Initializing embedding model: ${embeddingModelName}... (Status: ${data.status})`;
+                    console.log(`DEBUG: Model Initializing: ${statusMessage} (Status: ${data.status})`); // Added debug log
                 }
                 modelStatus.textContent = statusMessage;
             };
 
             try {
-                modelStatus.textContent = `Initializing embedding model: ${embeddingModelName}...`;
                 // Pass the progress_callback to the pipeline function
                 embeddingPipeline = await pipeline('feature-extraction', embeddingModelName, { progress_callback });
                 modelStatus.textContent = `Embedding model "${embeddingModelName}" loaded!`;
@@ -1289,9 +1026,9 @@
                             if (relevantChunksDisplayed >= topN) break; // Limit based on user's topN input
                             if (result.similarity > 0) { // Only show chunks with positive similarity
                                 const resultDiv = document.createElement('div');
-                                resultDiv.classList.add('search-result-item');
+                                resultDiv.style.cssText = 'background-color: #dbeafe; padding: 15px; border-radius: 4px; margin-bottom: 10px; word-wrap: break-word; border-left: 4px solid #3b82f6;'; /* inline styles */
                                 resultDiv.innerHTML = `
-                                    <p><strong>Similarity:</strong> ${(result.similarity * 100).toFixed(2)}%</p>
+                                    <p><strong style="color: #1e40af;">Similarity:</strong> ${(result.similarity * 100).toFixed(2)}%</p>
                                     <p><strong>Source:</strong> ${result.chunk.source}</p>
                                     <p><strong>Content:</strong> ${result.chunk.content.length > 200 ? result.chunk.content.substring(0, 200) + '...' : result.chunk.content}</p>
                                 `;
@@ -1373,6 +1110,43 @@
         }
 
         // --- CSV Input/Output Functions ---
+
+        /**
+         * Parses a single CSV line, handling quoted fields and escaped quotes.
+         * This uses a state-machine approach for robustness.
+         * @param {string} line The CSV line to parse.
+         * @returns {Array<string>} An array of parsed fields.
+         */
+        function parseCsvLine(line) {
+            const result = [];
+            let inQuote = false;
+            let currentField = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    // Handle escaped double quote: "" becomes "
+                    if (inQuote && i + 1 < line.length && line[i + 1] === '"') {
+                        currentField += '"';
+                        i++; // Skip the next character as it's part of the escaped quote
+                    } else {
+                        // Toggle inQuote state
+                        inQuote = !inQuote;
+                    }
+                } else if (char === ',' && !inQuote) {
+                    // End of an unquoted field or a quoted field that just closed
+                    result.push(currentField);
+                    currentField = '';
+                } else {
+                    // Add character to current field
+                    currentField += char;
+                }
+            }
+            // Add the last field (after the last comma or if no commas)
+            result.push(currentField);
+
+            return result;
+        }
+
         async function loadCsvData() {
             const file = csvFileInput.files[0];
             if (!file) {
@@ -1385,13 +1159,14 @@
             }
 
             const reader = new FileReader();
-            reader.onload = async (e) => { // This needs to be async to await promises inside
+            reader.onload = async (e) => {
                 const csvText = e.target.result;
-                const lines = csvText.split('\n');
+                const lines = csvText.split(/\r?\n/); // Use regex to handle both \n and \r\n line endings
                 let successfulImports = 0;
                 let failedImports = 0;
 
-                const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+                // Parse header using the new robust function
+                const header = parseCsvLine(lines[0] || '').map(h => h.trim().toLowerCase());
                 const contentIndex = header.indexOf('content');
                 const sourceIndex = header.indexOf('source');
 
@@ -1400,21 +1175,33 @@
                     return;
                 }
 
-                // Prepare data for a single transaction
                 const chunksToSave = [];
+                const MIN_MEANINGFUL_CONTENT_LENGTH = 10; // Only import content longer than this
+
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (line === '') continue;
+                    if (line === '') continue; // Skip empty lines
 
-                    const parts = line.split(',');
+                    const parts = parseCsvLine(line); // Use the new parsing function
 
-                    if (parts.length > Math.max(contentIndex, sourceIndex)) {
-                        const content = parts[contentIndex].trim();
-                        const source = parts[sourceIndex].trim() || 'CSV Import';
-                        chunksToSave.push({ content, source });
+                    // Ensure indices are within bounds for content and source columns
+                    if (contentIndex < parts.length && sourceIndex < parts.length) {
+                        let content = parts[contentIndex]?.trim() || ''; // Get content, default to empty string
+                        let source = parts[sourceIndex]?.trim() || 'CSV Import';
+
+                        // Remove common control characters that might interfere or be unwanted
+                        content = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+
+                        // Filter out empty or extremely short/meaningless content after cleaning
+                        if (content.length >= MIN_MEANINGFUL_CONTENT_LENGTH) {
+                            chunksToSave.push({ content, source });
+                        } else {
+                            failedImports++;
+                            console.warn(`Skipping CSV row with content too short or malformed (length ${content.length}): "${line}"`);
+                        }
                     } else {
                         failedImports++;
-                        console.warn("Skipping malformed CSV row:", line);
+                        console.warn("Skipping malformed CSV row (not enough columns for 'content' or 'source'):", line);
                     }
                 }
 
@@ -1423,62 +1210,103 @@
                     return;
                 }
 
-                // Use a single transaction for all insertions
+                // Disable buttons during processing
+                loadCsvButton.disabled = true;
+                saveChunkButton.disabled = true;
+                generateEmbeddingsButton.disabled = true;
+                downloadCsvButton.disabled = true;
+
+                showMessage(`Importing ${chunksToSave.length} chunks from CSV...`);
+
                 try {
                     const transaction = db.transaction([STORE_NAME], 'readwrite');
                     const objectStore = transaction.objectStore(STORE_NAME);
 
                     const counterRequest = objectStore.get(COUNTER_KEY);
-                    counterRequest.onsuccess = async () => {
+                    counterRequest.onsuccess = () => {
                         let nextIdValue = counterRequest.result ? counterRequest.result.value : 1;
 
-                        for (const { content, source } of chunksToSave) {
-                            const chunkId = 'chunk_' + nextIdValue;
-                            const textChunk = {
-                                id: chunkId,
-                                content: content,
-                                source: source,
-                                timestamp: new Date().toISOString(),
-                                wordCount: content.split(/\s+/).length,
-                                charCount: content.length,
-                                embedding: null,
-                                embeddingModel: null,
-                                isEmbedded: false
-                            };
-                            objectStore.put(textChunk);
-                            nextIdValue++;
-                            successfulImports++;
-                        }
+                        chunksToSave.forEach(chunkData => {
+                            const chunkSize = parseInt(document.getElementById('chunkSizeInput').value, 10);
+                            const autoChunk = document.getElementById('autoChunkCheckbox').checked;
+
+                            let currentLineChunks = [];
+                            if (autoChunk && chunkData.content.length > chunkSize) {
+                                currentLineChunks = splitTextIntoChunks(chunkData.content, chunkSize, chunkData.source);
+                            } else {
+                                // If not auto-chunking or if content is smaller than chunk size, treat as a single chunk
+                                currentLineChunks.push(chunkData);
+                            }
+
+                            currentLineChunks.forEach(chunk => {
+                                const chunkId = 'chunk_' + nextIdValue;
+                                const textChunk = {
+                                    id: chunkId,
+                                    content: chunk.content,
+                                    source: chunk.source,
+                                    timestamp: new Date().toISOString(),
+                                    wordCount: chunk.content.split(/\s+/).length,
+                                    charCount: chunk.content.length,
+                                    embedding: null,
+                                    embeddingModel: null,
+                                    isEmbedded: false
+                                };
+                                try {
+                                    objectStore.put(textChunk);
+                                    nextIdValue++;
+                                    successfulImports++;
+                                    console.log(`DEBUG: Added chunk ${chunkId} from CSV to transaction.`);
+                                } catch (e) {
+                                    console.error(`DEBUG: Failed to add chunk ${chunkId} from CSV to transaction:`, e);
+                                    failedImports++; // Increment failed count for DB errors as well
+                                }
+                            });
+                        });
                         // Update counter at the end of the batch
                         objectStore.put({ id: COUNTER_KEY, value: nextIdValue });
                     };
                     counterRequest.onerror = (event) => {
-                        console.error("Counter request error during CSV import:", event.target.error);
-                        showMessage(`Error during CSV import: ${event.target.error?.message}`, 'error');
-                        failedImports += chunksToSave.length - successfulImports; // Count remaining as failed
+                        console.error("Counter request error during CSV import preparation:", event.target.error);
+                        showMessage(`Error preparing CSV import: ${event.target.error?.message}`, 'error');
+                        // No need to adjust failedImports here, as it's already accounted for in the loop or will be caught by transaction error
                     };
 
+                    transaction.oncomplete = () => {
+                        showMessage(`CSV import complete. Successfully added: ${successfulImports} chunks. Failed: ${failedImports}.`, 'success');
+                        displayChunks();
+                        updateStats();
+                        // Re-enable buttons
+                        loadCsvButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        generateEmbeddingsButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                    };
+                    transaction.onerror = (event) => {
+                        console.error("Error during CSV import transaction:", event.target.error);
+                        showMessage(`Error during CSV import: ${event.target.error?.message}. Successfully added: ${successfulImports} chunks. Failed: ${chunksToSave.length - successfulImports}.`, 'error');
+                        // Re-enable buttons
+                        loadCsvButton.disabled = false;
+                        saveChunkButton.disabled = false;
+                        generateEmbeddingsButton.disabled = false;
+                        downloadCsvButton.disabled = false;
+                    };
 
-                    await new Promise((resolve, reject) => {
-                        transaction.oncomplete = () => {
-                            resolve();
-                        };
-                        transaction.onerror = (event) => {
-                            reject(event.target.error);
-                        };
-                    });
-
-                    showMessage(`CSV import complete. Successfully added: ${successfulImports} chunks. Failed: ${failedImports}.`, 'success');
-                    displayChunks();
-                    updateStats();
                 } catch (error) {
-                    console.error("Error during CSV import transaction:", error);
-                    showMessage(`Error during CSV import: ${error.message || error}`, 'error');
-                    failedImports = chunksToSave.length - successfulImports; // Re-evaluate failed count
+                    console.error("Failed to initiate CSV import transaction:", error);
+                    showMessage(`Failed to load CSV: ${error.message || error}`, 'error');
+                    // Re-enable buttons
+                    loadCsvButton.disabled = false;
+                    saveChunkButton.disabled = false;
+                    generateEmbeddingsButton.disabled = false;
+                    downloadCsvButton.disabled = false;
                 }
             };
             reader.onerror = () => {
                 showMessage("Error reading CSV file.", 'error');
+                loadCsvButton.disabled = false;
+                saveChunkButton.disabled = false;
+                generateEmbeddingsButton.disabled = false;
+                downloadCsvButton.disabled = false;
             };
             reader.readAsText(file);
         }
@@ -1507,6 +1335,7 @@
 
                     chunks.forEach(chunk => {
                         const number = chunk.id.split('_')[1];
+                        // Escape quotes by doubling them, then wrap in quotes
                         const escapedContent = `"${chunk.content.replace(/"/g, '""')}"`;
                         const escapedSource = `"${chunk.source.replace(/"/g, '""')}"`;
                         csvContent += `${number},${escapedContent},${escapedSource}\n`;
@@ -1632,7 +1461,12 @@
                 return;
             }
 
-            const confirmDelete = window.confirm(`Are you sure you want to delete the database '${currentDBName}'? This action cannot be undone.`);
+            // Using custom message box instead of window.confirm
+            const confirmDelete = await new Promise(resolve => {
+                const userConfirmed = window.confirm(`Are you sure you want to delete the database '${currentDBName}'? This action cannot be undone.`);
+                resolve(userConfirmed);
+            });
+
             if (!confirmDelete) {
                 return;
             }
