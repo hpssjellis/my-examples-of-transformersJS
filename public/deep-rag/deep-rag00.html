@@ -146,6 +146,21 @@
         .delete-button:hover {
             background-color: #c82333; /* Darker red */
         }
+        .view-button { /* New style for View button */
+            background-color: #17a2b8; /* Info blue/cyan */
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto;
+            margin-top: 0;
+            margin-left: 5px; /* Adjust spacing */
+        }
+        .view-button:hover {
+            background-color: #138496; /* Darker info blue/cyan */
+        }
         .message-box {
             background-color: #fff3cd; /* Light yellow */
             color: #664d03; /* Dark yellow text */
@@ -280,6 +295,67 @@
             width: auto; /* Override 100% width */
             margin-right: 10px;
         }
+
+        /* Modal specific styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh; /* Limit height to prevent overflow */
+            overflow-y: auto; /* Enable scrolling for long content */
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #333;
+        }
+        .modal-close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+        }
+        .modal-close-button:hover {
+            color: #333;
+        }
+        .modal-body pre {
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            word-wrap: break-word;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #444;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -399,6 +475,19 @@
         </div>
     </div>
 
+    <!-- Chunk Content Modal -->
+    <div id="chunkModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalChunkTitle">Chunk Content</h3>
+                <button id="modalCloseButton" class="modal-close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="modalChunkContent"></pre>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // Import the pipeline function from Transformer.js
         import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
@@ -437,6 +526,13 @@
         // New show chunks checkbox
         const showChunksCheckbox = document.getElementById('showChunksCheckbox');
         const storedItemsContainer = document.querySelector('.stored-items'); // Get the container
+
+        // Modal elements
+        const chunkModal = document.getElementById('chunkModal');
+        const modalChunkTitle = document.getElementById('modalChunkTitle');
+        const modalChunkContent = document.getElementById('modalChunkContent');
+        const modalCloseButton = document.getElementById('modalCloseButton');
+
 
         // IndexedDB variables
         const DB_LIST_KEY = 'rag_db_list'; // localStorage key to store list of DB names
@@ -578,9 +674,55 @@
             });
         }
 
+        /**
+         * Helper function to split text into chunks based on size.
+         * @param {string} text The text to split.
+         * @param {number} chunkSize The maximum size of each chunk.
+         * @param {string} source The source to assign to the chunks.
+         * @returns {Array<Object>} An array of chunk objects.
+         */
+        function splitTextIntoChunks(text, chunkSize, source) {
+            const chunks = [];
+            let currentPosition = 0;
+            let chunkIndex = 1;
+
+            while (currentPosition < text.length) {
+                const endPosition = Math.min(currentPosition + chunkSize, text.length);
+                let chunkContent = text.substring(currentPosition, endPosition);
+
+                // Try to split at a sentence boundary if possible to avoid cutting mid-sentence
+                if (endPosition < text.length) {
+                    const lastSentenceEnd = Math.max(
+                        chunkContent.lastIndexOf('.'),
+                        chunkContent.lastIndexOf('?'),
+                        chunkContent.lastIndexOf('!')
+                    );
+                    if (lastSentenceEnd > chunkContent.length * 0.8 && lastSentenceEnd > 0) {
+                        // If a sentence ends near the chunk end, use that as the boundary
+                        chunkContent = chunkContent.substring(0, lastSentenceEnd + 1);
+                        currentPosition += lastSentenceEnd + 1;
+                    } else {
+                        // Otherwise, just split at chunk size
+                        currentPosition = endPosition;
+                    }
+                } else {
+                    currentPosition = endPosition;
+                }
+
+                chunks.push({
+                    content: chunkContent.trim(),
+                    source: `${source} (part ${chunkIndex})`
+                });
+                chunkIndex++;
+            }
+            return chunks;
+        }
+
+
         // Function to save a new text chunk (can be called by manual input or CSV)
         // Now returns a Promise to indicate completion of its internal transaction
         async function saveNewChunk(content, source = 'Unknown') {
+            console.log("DEBUG: saveNewChunk function is being executed."); // New log
             return new Promise(async (resolve, reject) => {
                 console.log("Adding new text chunk...");
                 if (content === "") {
@@ -644,19 +786,72 @@
                 }
             });
         }
+        console.log("DEBUG: saveNewChunk function definition completed."); // New log after definition
+
 
         // Manual text input handler
         document.getElementById('saveChunkButton').addEventListener('click', async () => {
             const content = textInput.value.trim();
             const source = sourceInput.value.trim() || 'Manual Input';
-            try {
-                await saveNewChunk(content, source);
-                textInput.value = ''; // Clear manual input after saving
-                sourceInput.value = '';
-                showMessage("Text chunk added successfully!", 'success');
-            } catch (error) {
-                showMessage(`Error adding text: ${error.message || error}`, 'error');
+            const chunkSize = parseInt(document.getElementById('chunkSizeInput').value, 10);
+            const autoChunk = document.getElementById('autoChunkCheckbox').checked;
+
+            if (content === "") {
+                showMessage("Text content cannot be empty.", 'info');
+                return;
             }
+
+            let chunksToProcess = [];
+            if (autoChunk && content.length > chunkSize) {
+                console.log(`Text length (${content.length}) exceeds chunk size (${chunkSize}). Auto-chunking...`);
+                chunksToProcess = splitTextIntoChunks(content, chunkSize, source);
+            } else {
+                chunksToProcess.push({ content: content, source: source });
+            }
+
+            if (chunksToProcess.length === 0) {
+                showMessage("No valid chunks to process.", 'error');
+                return;
+            }
+
+            let successfulAdds = 0;
+            let failedAdds = 0;
+
+            // Disable buttons during processing
+            saveChunkButton.disabled = true;
+            generateEmbeddingsButton.disabled = true;
+            loadCsvButton.disabled = true;
+            downloadCsvButton.disabled = true;
+
+            showMessage(`Processing ${chunksToProcess.length} chunk(s)...`);
+
+            for (const chunkData of chunksToProcess) {
+                try {
+                    await saveNewChunk(chunkData.content, chunkData.source); // Calls saveNewChunk
+                    successfulAdds++;
+                } catch (error) {
+                    console.error("Error saving chunk:", chunkData, error);
+                    failedAdds++;
+                }
+            }
+
+            textInput.value = ''; // Clear manual input after saving
+            sourceInput.value = '';
+
+            // Re-enable buttons
+            saveChunkButton.disabled = false;
+            generateEmbeddingsButton.disabled = false;
+            loadCsvButton.disabled = false;
+            downloadCsvButton.disabled = false;
+
+            if (failedAdds === 0) {
+                showMessage(`Successfully added ${successfulAdds} chunk(s)!`, 'success');
+            } else {
+                showMessage(`Added ${successfulAdds} chunk(s), failed to add ${failedAdds} chunk(s). Check console for details.`, 'error');
+            }
+
+            displayChunks();
+            updateStats();
         });
 
 
@@ -752,12 +947,23 @@
                             deleteButton.textContent = 'Delete';
                             deleteButton.addEventListener('click', () => deleteChunk(chunk.id)); // Attach event listener here
 
+                            const viewButton = document.createElement('button'); // New View Button
+                            viewButton.classList.add('view-button');
+                            viewButton.textContent = 'View';
+                            viewButton.addEventListener('click', () => showChunkModal(`Chunk #${chunkNumber} (Source: ${chunk.source})`, chunk.content));
+
+
                             const itemHeader = document.createElement('div');
                             itemHeader.classList.add('item-header');
                             const spanChunkNumber = document.createElement('span');
                             spanChunkNumber.textContent = `Chunk #${chunkNumber}`;
                             itemHeader.appendChild(spanChunkNumber);
-                            itemHeader.appendChild(deleteButton);
+                            
+                            // Create a container for buttons to group them visually
+                            const buttonContainer = document.createElement('div');
+                            buttonContainer.appendChild(viewButton); // View button first
+                            buttonContainer.appendChild(deleteButton); // Delete button second
+                            itemHeader.appendChild(buttonContainer);
 
 
                             div.appendChild(itemHeader);
@@ -796,6 +1002,28 @@
                 showMessage("Failed to display chunks due to an unexpected error during retrieval.", 'error');
             }
         }
+
+        // --- Modal Functions ---
+        function showChunkModal(title, content) {
+            modalChunkTitle.textContent = title;
+            modalChunkContent.textContent = content;
+            chunkModal.style.display = 'flex'; // Use flex to center
+        }
+
+        function closeChunkModal() {
+            chunkModal.style.display = 'none';
+            modalChunkTitle.textContent = '';
+            modalChunkContent.textContent = '';
+        }
+
+        modalCloseButton.addEventListener('click', closeChunkModal);
+        // Also close modal if clicking outside the content
+        chunkModal.addEventListener('click', (event) => {
+            if (event.target === chunkModal) {
+                closeChunkModal();
+            }
+        });
+
 
         // --- Transformer.js Embedding Functions ---
 
@@ -1472,43 +1700,51 @@
 
         // Initialize when page loads
         window.onload = async () => {
-            // First, populate the selector
-            populateDbSelector();
+            console.log("DEBUG: window.onload event fired. Starting initialization."); // New log
+            try {
+                // First, populate the selector
+                populateDbSelector();
 
-            let lastUsedDb = localStorage.getItem(LAST_USED_DB_KEY);
-            const existingDbList = getRAGDBList();
+                let lastUsedDb = localStorage.getItem(LAST_USED_DB_KEY);
+                const existingDbList = getRAGDBList();
 
-            if (!lastUsedDb && existingDbList.length > 0) {
-                // If no last used, but existing DBs, load the first one
-                lastUsedDb = existingDbList[0];
-            } else if (!lastUsedDb && existingDbList.length === 0) {
-                // If no last used and no existing DBs, suggest creating a default one
-                lastUsedDb = 'default_rag_db';
-                newDbNameInput.value = lastUsedDb; // Pre-fill
-                showMessage("No RAG database found. A 'default_rag_db' has been suggested. Click 'Create New DB' to start.", 'info');
-                // Don't auto-create, let the user click "Create New DB"
-                currentDbNameDisplay.textContent = 'N/A (pending)';
-                return; // Exit onload, as user interaction is needed
-            }
+                if (!lastUsedDb && existingDbList.length > 0) {
+                    // If no last used, but existing DBs, load the first one
+                    lastUsedDb = existingDbList[0];
+                } else if (!lastUsedDb && existingDbList.length === 0) {
+                    // If no last used and no existing DBs, suggest creating a default one
+                    lastUsedDb = 'default_rag_db';
+                    newDbNameInput.value = lastUsedDb; // Pre-fill
+                    showMessage("No RAG database found. A 'default_rag_db' has been suggested. Click 'Create New DB' to start.", 'info');
+                    // Don't auto-create, let the user click "Create New DB"
+                    currentDbNameDisplay.textContent = 'N/A (pending)';
+                    console.log("DEBUG: No DB found, suggesting default and returning from onload."); // New log
+                    return; // Exit onload, as user interaction is needed
+                }
 
-            if (lastUsedDb) {
-                try {
+                if (lastUsedDb) {
+                    console.log(`DEBUG: Attempting to open DB: ${lastUsedDb}`); // New log
                     await openDB(lastUsedDb);
+                    console.log("DEBUG: DB opened, initializing model."); // New log
                     await initializeModel(); // Load the embedding model after DB is ready
+                    console.log("DEBUG: Model initialized, displaying chunks."); // New log
                     displayChunks(); // Call displayChunks here to set initial visibility
                     updateStats();
-                } catch (error) {
-                    console.error("Initialization failed:", error);
-                    showMessage(`Failed to load last used database '${lastUsedDb}'. Please create a new one.`, 'error');
+                    console.log("DEBUG: Initialization complete."); // New log
+                } else {
+                    // Fallback if somehow still no DB name after checks
+                    showMessage("Please create a new RAG database to begin.", 'info');
                     currentDbNameDisplay.textContent = 'N/A';
-                    localStorage.removeItem(LAST_USED_DB_KEY); // Clear invalid last used
-                    populateDbSelector(); // Re-populate in case something changed
+                    console.log("DEBUG: Fallback: No DB name, prompting user to create."); // New log
                 }
-            } else {
-                // Fallback if somehow still no DB name after checks
-                showMessage("Please create a new RAG database to begin.", 'info');
+            } catch (error) {
+                console.error("DEBUG: Fatal initialization error in window.onload:", error); // More specific error logging
+                showMessage(`A critical error occurred during initialization: ${error.message || error}`, 'error');
                 currentDbNameDisplay.textContent = 'N/A';
+                localStorage.removeItem(LAST_USED_DB_KEY); // Clear invalid last used
+                populateDbSelector(); // Re-populate in case something changed
             }
+            console.log("DEBUG: End of window.onload event handler."); // New log
         };
     </script>
 </body>
