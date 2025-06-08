@@ -1,0 +1,862 @@
+number,content,source
+1,"Machine Learning Systems
+Principles and Practices of Engineering Artificially Intelligent Systems
+
+Author, Editor & Curator
+Affiliation
+Vijay Janapa Reddi 
+
+Harvard University
+
+Last Updated
+May 14, 2025
+
+Abstract
+Machine Learning Systems presents a comprehensive approach to understanding and engineering machine learning (ML). While many resources focus on ML algorithms and model architectures, this book serves as a bridge between theoretical foundations and practical engineering.","preface (part 1)"
+10,"Author’s Note
+AI is bound to transform the world in profound ways, much like computers and the Internet revolutionized every aspect of society in the 20th century. From systems that generate creative content to those driving breakthroughs in drug discovery, AI is ushering in a new era—one that promises to be even more transformative in its scope and impact. But how do we make it accessible to everyone?","Author’s Note (part 1)"
+11,"With its transformative power comes an equally great responsibility for those who access it or work with it. Just as we expect companies to wield their influence ethically, those of us in academia bear a parallel responsibility: to share our knowledge openly, so it benefits everyone—not just a select few. This conviction inspired the creation of this book—an open-source resource aimed at making AI education, particularly in AI engineering, and systems, inclusive, and accessible to everyone fro","Author’s Note (part 2)"
+12,"m all walks of life.
+
+My passion for creating, curating, and editing this content has been deeply influenced by landmark textbooks that have profoundly shaped both my academic and personal journey. Whether I studied them cover to cover or drew insights from key passages, these resources fundamentally shaped the way I think. I reflect on the books that guided my path: works by Turing Award winners such as David Patterson and John Hennessy—pioneers in computer architecture and system design—and fo","Author’s Note (part 3)"
+13,"undational research papers by luminaries like Yann LeCun, Geoffrey Hinton, and Yoshua Bengio. In some small part, my hope is that this book will inspire students to chart their own unique paths.
+
+I am optimistic about what lies ahead for AI. It has the potential to solve global challenges and unlock creativity in ways we have yet to imagine. To achieve this, however, we must train the next generation of AI engineers and practitioners—those who can transform novel AI algorithms into working syste","Author’s Note (part 4)"
+14,"ms that enable real-world application. This book is a step toward curating the material needed to build the next generation of AI engineers who will transform today’s visions into tomorrow’s reality.
+
+This book is a work in progress, but knowing that even one learner benefits from its content motivates me to continually refine and expand it. To that end, if there’s one thing I ask of readers, it’s this: please show your support by starring the GitHub repository here.","Author’s Note (part 5)"
+15,"Your star ⭐ reflects your belief in this mission—not just to me, but to the growing global community of learners, educators, and practitioners. This small act is more than symbolic—it amplifies the importance of making AI education accessible.
+
+I am a student of my own writing, and every chapter of this book has taught me something new—thanks to the numerous people who have played, and continue to play, an important role in shaping this work.","Author’s Note (part 6)"
+16,"Professors, students, practitioners, and researchers contributed by offering suggestions, sharing expertise, identifying errors, and proposing improvements. Every interaction, whether a detailed critique or a simple correction from a GitHub contributor, has been a lesson in itself. These contributions have not only refined the material but also deepened my understanding of how knowledge grows through collaboration.","Author’s Note (part 7)"
+17,"This book is, therefore, not solely my work; it is a shared endeavor, reflecting the collective spirit of those dedicated to sharing their knowledge and effort.
+
+This book is dedicated to the loving memory of my father. His passion for education, endless curiosity, generosity in sharing knowledge, and unwavering commitment to quality challenge me daily to strive for excellence in all I do. In his honor, I extend this dedication to teachers and mentors everywhere, whose efforts and guidance tran","Author’s Note (part 8)"
+18,"sform lives every day. Your selfless contributions remind me to persevere.
+
+Last but certainly not least, this work would not be possible without the unwavering support of my wonderful wife and children. Their love, patience, and encouragement form the foundation that enables me to pursue my passion and bring this work to life. For this, and so much more, I am deeply grateful.
+
+— Prof. Vijay Janapa Reddi","Author’s Note (part 9)"
+19,"About the Book
+Overview
+Purpose of the Book
+Welcome to this collaborative textbook. It originated as part of the CS249r: Tiny Machine Learning course that Prof. Vijay Janapa Reddi teaches at Harvard University.
+
+The goal of this book is to provide a resource for educators and learners seeking to understand the principles and practices of machine learning systems. This book is continually updated to incorporate the latest insights and effective teaching strategies with the intent that it remains","About the Book (part 1)"
+2,"It emphasizes the systems context that engineers need to master when building AI solutions in the real world. The text progresses from foundational concepts to advanced system design, integrating topics such as data engineering, model optimization, hardware-aware training approaches, and inference acceleration strategies. Throughout the book, readers develop a principled understanding of ML systems engineering, learning to reason about system architectures and address critical challenges in are","preface (part 2)"
+20,"a valuable resource in this fast-evolving field. So please check back often!
+
+Context and Development
+The book originated as a collaborative effort with contributions from students, researchers, and practitioners. While maintaining its academic rigor and real-world applicability, it continues to evolve through regular updates and careful curation to reflect the latest developments in machine learning systems.","About the Book (part 2)"
+21,"What to Expect
+This textbook explores the foundational principles, practical workflows, and critical challenges of building and deploying machine learning systems. Starting with foundational concepts, it progresses through engineering principles, examines operational considerations for deploying AI systems, and concludes by reflecting on the societal and technological implications of machine learning.","About the Book (part 3)"
+22,"Learning Goals
+Key Learning Outcomes
+This book is structured with Bloom’s Taxonomy in mind, which defines six levels of learning, ranging from foundational knowledge to advanced creative thinking:
+
+
+Figure 1: Bloom’s Taxonomy (2021 edition).
+Remembering: Recalling basic facts and concepts.
+
+Understanding: Explaining ideas or processes.
+
+Applying: Using knowledge in new situations.
+
+Analyzing: Breaking down information into components.","About the Book (part 4)"
+23,"Evaluating: Making judgments based on criteria and standards.
+
+Creating: Producing original work or solutions.
+
+Learning Objectives
+This book supports readers in:
+
+Understanding Fundamentals: Explain the foundational principles of machine learning, including theoretical underpinnings and practical applications.
+
+Analyzing System Components: Evaluate the critical components of AI systems and their roles within various architectures.","About the Book (part 5)"
+24,"Designing Workflows: Outline workflows for developing machine learning systems, from data collection to deployment.
+
+Optimizing Models: Apply methods to enhance performance, such as hyperparameter tuning and regularization.
+
+Evaluating Ethical Implications: Analyze societal impacts and address potential biases in AI systems.
+
+Exploring Applications: Investigate real-world use cases across diverse domains.","About the Book (part 6)"
+25,"Considering Deployment Challenges: Address security, scalability, and maintainability in real-world systems.
+
+Envisioning Future Trends: Reflect on emerging challenges and technologies in machine learning.
+
+AI Learning Companion
+Throughout this resource, you’ll find SocratiQ—an AI learning assistant designed to enhance your learning experience. Inspired by the Socratic method of teaching, SocratiQ combines interactive quizzes, personalized assistance, and real-time feedback to help you reinfor","About the Book (part 7)"
+26,"ce your understanding and create new connections. As part of our experiment with Generative AI technologies, SocratiQ encourages critical thinking and active engagement with the material.
+
+SocratiQ is still a work in progress, and we welcome your feedback to make it better. For more details about how SocratiQ works and how to get the most out of it, visit the AI Learning Companion page.
+
+How to Use This Book
+Book Structure
+The book is organized into four main parts, each building on the previous","About the Book (part 8)"
+27,"one:
+
+The Essentials (Chapters 1-4) Core principles, components, and architectures that underpin machine learning systems.
+
+Engineering Principles (Chapters 5-13) Covers workflows, data engineering, optimization strategies, and operational challenges in system design.
+
+AI Best Practice (Chapters 14-18) Focuses on key considerations for deploying AI systems in real-world environments, including security, privacy, robustness, and sustainability.","About the Book (part 9)"
+28,"Closing Perspectives (Chapter 19-20) Synthesizes key lessons and explores emerging trends shaping the future of ML systems.
+
+Suggested Reading Paths
+Beginners: Start with The Essentials to build a strong conceptual base before progressing to other parts.
+
+Practitioners: Focus on Engineering Principles and AI in Practice for hands-on, real-world insights.
+
+Researchers: Dive into AI in Practice and Closing Perspectives to explore advanced topics and societal implications.","About the Book (part 10)"
+29,"Modular Design
+The book is modular, allowing readers to explore chapters independently or sequentially. Each chapter includes supplementary resources:
+
+Slides summarizing key concepts.
+
+Videos providing in-depth explanations.
+
+Exercises reinforcing understanding.
+
+Labs offering practical, hands-on experience.
+
+While several of these resources are still a work in progress, we believe it’s better to share valuable insights and tools as they become available rather than wait for everything to be","About the Book (part 11)"
+3,"as including security, privacy, and reliability. While ML applications and tools evolve rapidly, the engineering principles for building ML systems remain largely consistent. This book distills these enduring concepts, making it a resource for anyone seeking to build flexible, efficient, and robust ML systems.
+
+🎙 Listen to the AI Podcast, created using Google’s Notebook LM and inspired by insights drawn from our IEEE education viewpoint paper.","preface (part 3)"
+30,"perfect. After all, progress is far more important than perfection, and your feedback will help us improve and refine this resource over time.
+
+Additionally, we try to reuse and build upon the incredible work created by amazing experts in the field, rather than reinventing everything from scratch. This philosophy reflects the fundamental essence of community-driven learning: collaboration, sharing knowledge, and collectively advancing our understanding.","About the Book (part 12)"
+31,"Transparency and Collaboration
+This book is a community-driven project, with content generated collaboratively by numerous contributors over time. The content creation process may have involved various editing tools, including generative AI technology. As the main author, editor, and curator, Prof. Vijay Janapa Reddi maintains human oversight to ensure the content is accurate and relevant.
+
+However, no one is perfect, and inaccuracies may still exist.","About the Book (part 13)"
+32,"Your feedback is highly valued, and we encourage you to provide corrections or suggestions. This collaborative approach is crucial for maintaining high-quality information and making it globally accessible.
+
+Copyright and Licensing
+This book is open-source and developed collaboratively through GitHub. Unless otherwise stated, this work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0).","About the Book (part 14)"
+33,"Contributors retain copyright over their individual contributions, dedicated to the public domain or released under the same open license as the original project. For more information on authorship and contributions, visit the GitHub repository.
+
+Join the Community
+This textbook is more than just a resource—it’s an invitation to collaborate and learn together. Engage in community discussions to share insights, tackle challenges, and learn alongside fellow students, researchers, and practitione","About the Book (part 15)"
+34,"rs.
+
+Whether you’re a student starting your journey, a practitioner solving real-world challenges, or a researcher exploring advanced concepts, your contributions will enrich this learning community. Introduce yourself, share your goals, and let’s collectively build a deeper understanding of machine learning systems.","About the Book (part 16)"
+35,"Book Changelog
+This Machine Learning Systems textbook is constantly evolving. This changelog automatically records all updates and improvements, helping you stay informed about what’s new and refined.
+
+Last Updated: May 14, 2025
+
+2025 Changes
+📅 Published on May 14, 2025
+🔗 View Full Diff — 1 files updated (39 lines added, 41 lines removed)
+
+Minor Updates
+Ondevice Learning: ++— (39 lines added, 41 lines removed)
+📅 Published on May 14, 2025
+🔗 View Full Diff — 1 files updated (647 lines added, 5","Book Changelog (part 1)"
+36,"7 lines removed)
+
+Major Updates
+📅 Published on May 04, 2025
+🔗 View Full Diff — 37 files updated (7185 lines added, 3152 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Mar 25, 2025
+🔗 View Full Diff — 2 files updated (4 lines added, 1 lines removed)
+
+Minor Updates
+📅 Published on Mar 26, 2025
+🔗 View Full Diff — 40 files updated (12616 lines added, 7370 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Mar 03, 2025
+🔗 View Full Diff — 31 files updated (12032 lines added,","Book Changelog (part 2)"
+37,"7337 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Feb 08, 2025
+🔗 View Full Diff — 2 files updated (31 lines added, 29 lines removed)
+
+Minor Updates
+📅 Published on Feb 07, 2025
+🔗 View Full Diff — 46 files updated (4644 lines added, 3807 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Feb 02, 2025
+🔗 View Full Diff — 20 files updated (2076 lines added, 1555 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jan 28, 2025
+🔗 View Full Diff — 1 files updated (52","Book Changelog (part 3)"
+38,"lines added, 52 lines removed)
+
+Minor Updates
+📅 Published on Jan 28, 2025
+🔗 View Full Diff — 16 files updated (4127 lines added, 2219 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jan 17, 2025
+🔗 View Full Diff — 12 files updated (1976 lines added, 1477 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jan 12, 2025
+🔗 View Full Diff — 5 files updated (221 lines added, 253 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jan 11, 2025
+🔗 View Full Diff — 4 fil","Book Changelog (part 4)"
+39,"es updated (154 lines added, 103 lines removed)
+
+Minor Updates
+📅 Published on Jan 11, 2025
+🔗 View Full Diff — 5 files updated (907 lines added, 535 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jan 09, 2025
+🔗 View Full Diff — 8 files updated (56 lines added, 58 lines removed)
+
+Minor Updates
+📅 Published on Jan 07, 2025
+🔗 View Full Diff — 5 files updated (254 lines added, 149 lines removed)
+
+Minor Updates
+📅 Published on Jan 03, 2025
+🔗 View Full Diff — 7 files updated (38 lines","Book Changelog (part 5)"
+4,"This podcast provides an accessible overview of what this book is all about.
+
+  
+
+Preface
+Cover image.
+
+Welcome to Machine Learning Systems, your gateway to the fast-paced world of machine learning (ML) systems. This book is an extension of the CS249r course at Harvard University, taught by Prof. Vijay Janapa Reddi, and is the result of a collaborative effort involving students, professionals, and the broader community of AI practitioners.","preface (part 4)"
+40,"added, 36 lines removed)
+
+Minor Updates
+📅 Published on Jan 02, 2025
+🔗 View Full Diff — 4 files updated (66 lines added, 127 lines removed)
+
+Minor Updates
+📅 Published on Jan 01, 2025
+🔗 View Full Diff — 45 files updated (8282 lines added, 4753 lines removed)
+
+Major Updates
+Minor Updates
+2024 Changes
+📅 Published on Nov 19, 2024
+🔗 View Full Diff — 2 files updated (74 lines added, 65 lines removed)
+
+Minor Updates
+📅 Published on Nov 19, 2024
+🔗 View Full Diff — 6 files updated (474 lines added","Book Changelog (part 6)"
+41,", 331 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Nov 16, 2024
+🔗 View Full Diff — 4 files updated (502 lines added, 106 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Nov 15, 2024
+🔗 View Full Diff — 35 files updated (74 lines added, 162 lines removed)
+
+Minor Updates
+📅 Published on Nov 15, 2024
+🔗 View Full Diff — 86 files updated (3636 lines added, 1991 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Sep 20, 2024
+🔗 View Full Diff — 1 files updated (1","Book Changelog (part 7)"
+42,"lines added, 1 lines removed)
+
+Minor Updates
+📅 Published on Sep 20, 2024
+🔗 View Full Diff — 43 files updated (4718 lines added, 3227 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Sep 12, 2024
+🔗 View Full Diff — 7 files updated (1561 lines added, 86 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Sep 06, 2024
+🔗 View Full Diff — 1 files updated (8 lines added, 10 lines removed)
+
+Minor Updates
+📅 Published on Sep 04, 2024
+🔗 View Full Diff — 20 files updated (78 lines","Book Changelog (part 8)"
+43,"added, 82 lines removed)
+
+Minor Updates
+📅 Published on Sep 02, 2024
+🔗 View Full Diff — 5 files updated (218 lines added, 179 lines removed)
+
+Minor Updates
+📅 Published on Aug 29, 2024
+🔗 View Full Diff — 5 files updated (1568 lines added, 34 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Aug 27, 2024
+🔗 View Full Diff — 10 files updated (225 lines added, 245 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Aug 22, 2024
+🔗 View Full Diff — 6 files updated (14 lines added","Book Changelog (part 9)"
+44,", 21 lines removed)
+
+Minor Updates
+📅 Published on Aug 21, 2024
+🔗 View Full Diff — 18 files updated (720 lines added, 1217 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Aug 15, 2024
+🔗 View Full Diff — 3 files updated (3 lines added, 6 lines removed)
+
+Minor Updates
+📅 Published on Aug 15, 2024
+🔗 View Full Diff — 22 files updated (363 lines added, 239 lines removed)
+
+Minor Updates
+📅 Published on Aug 15, 2024
+🔗 View Full Diff — 3 files updated (188 lines added, 164 lines removed)","Book Changelog (part 10)"
+45,"Major Updates
+Minor Updates
+📅 Published on Aug 06, 2024
+🔗 View Full Diff — 14 files updated (279 lines added, 279 lines removed)
+
+Minor Updates
+📅 Published on Aug 06, 2024
+🔗 View Full Diff — 27 files updated (1182 lines added, 810 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jun 25, 2024
+🔗 View Full Diff — 1 files updated (1 lines added, 1 lines removed)
+
+Minor Updates
+📅 Published on Jun 20, 2024
+🔗 View Full Diff — 2 files updated (4 lines added, 5 lines removed)
+
+Minor U","Book Changelog (part 11)"
+46,"pdates
+📅 Published on Jun 19, 2024
+🔗 View Full Diff — 58 files updated (6625 lines added, 2899 lines removed)
+
+Major Updates
+Minor Updates
+📅 Published on Jun 11, 2024
+🔗 View Full Diff — 18 files updated (518 lines added, 204 lines removed)
+
+Minor Updates
+📅 Published on Jun 01, 2024
+🔗 View Full Diff — 19 files updated (401 lines added, 404 lines removed)
+
+Minor Updates
+📅 Published on May 26, 2024
+🔗 View Full Diff — 29 files updated (9908 lines added, 8688 lines removed)
+
+Major Updates
+Min","Book Changelog (part 12)"
+47,"or Updates
+📅 Published on Mar 21, 2024
+🔗 View Full Diff — 17 files updated (860 lines added, 374 lines removed)
+
+Minor Updates
+📅 Published on Mar 12, 2024
+🔗 View Full Diff — 0 files updated (0 lines added, 0 lines removed)
+
+📅 Published on Mar 12, 2024
+🔗 View Full Diff — 18 files updated (606 lines added, 290 lines removed)
+
+Minor Updates
+📅 Published on Feb 03, 2024
+🔗 View Full Diff — 8 files updated (35 lines added, 35 lines removed)
+
+Minor Updates
+📅 Published on Feb 02, 2024
+🔗 View Fu","Book Changelog (part 13)"
+48,"ll Diff — 14 files updated (310 lines added, 315 lines removed)
+
+Minor Updates
+📅 Published on Jan 02, 2024
+🔗 View Full Diff — 2 files updated (1 lines added, 3 lines removed)
+
+Minor Updates
+2023 Changes
+📅 Published on Dec 19, 2023
+🔗 View Full Diff — 1 files updated (135 lines added, 103 lines removed)
+
+Major Updates
+📅 Published on Dec 18, 2023
+🔗 View Full Diff — 3 files updated (43 lines added, 19 lines removed)
+
+Minor Updates
+📅 Published on Dec 13, 2023
+🔗 View Full Diff — 1 files update","Book Changelog (part 14)"
+49,"d (1 lines added, 1 lines removed)
+
+Minor Updates
+📅 Published on Dec 13, 2023
+🔗 View Full Diff — 1 files updated (1 lines added, 1 lines removed)
+
+Minor Updates
+📅 Published on Dec 12, 2023
+🔗 View Full Diff — 1 files updated (2 lines added, 2 lines removed)
+
+Minor Updates
+📅 Published on Dec 12, 2023
+🔗 View Full Diff — 2 files updated (2 lines added, 2 lines removed)
+
+Minor Updates
+📅 Published on Dec 12, 2023
+🔗 View Full Diff — 1 files updated (1 lines added, 1 lines removed)
+
+Minor Update","Book Changelog (part 15)"
+5,"We’ve created this open-source book to demystify the process of building efficient and scalable ML systems. Our goal is to provide a comprehensive guide that covers the principles, practices, and challenges of developing robust ML pipelines for deployment. This isn’t a static textbook—it’s a living, evolving resource designed to keep pace with advancements in the field.
+
+“If you want to go fast, go alone. If you want to go far, go together.","preface (part 5)"
+50,"s
+📅 Published on Dec 11, 2023
+🔗 View Full Diff — 0 files updated (0 lines added, 0 lines removed)
+
+📅 Published on Dec 11, 2023
+🔗 View Full Diff — 10 files updated (18 lines added, 121 lines removed)
+
+Minor Updates
+📅 Published on Dec 11, 2023
+🔗 View Full Diff — 10 files updated (36 lines added, 36 lines removed)
+
+Minor Updates
+📅 Published on Dec 11, 2023
+🔗 View Full Diff — 26 files updated (137 lines added, 32 lines removed)
+
+Minor Updates
+📅 Published on Dec 10, 2023
+🔗 View Full Diff —","Book Changelog (part 16)"
+51,"1 files updated (7 lines added, 7 lines removed)
+
+Minor Updates
+📅 Published on Dec 10, 2023
+🔗 View Full Diff — 26 files updated (12807 lines added, 364 lines removed)
+
+Major Updates
+Ai For Good: +++++ (208 lines added, 1 lines removed)
+Benchmarking: +++++ (796 lines added, 11 lines removed)
+Data Engineering: +++++ (436 lines added, 12 lines removed)
+Dl Primer: +++++ (239 lines added, 1 lines removed)
+Dsp Spectral Features Block: +++++ (636 lines added, 21 lines removed)
+Embedded Ml: +++++ (278","Book Changelog (part 17)"
+52,"lines added, 5 lines removed)
+Embedded Sys: +++++ (393 lines added, 2 lines removed)
+Frameworks: +++++ (708 lines added, 11 lines removed)
+Hw Acceleration: +++++ (1021 lines added, 12 lines removed)
+Image Classification: +++++ (563 lines added, 49 lines removed)
+Kws Nicla: +++++ (395 lines added, 26 lines removed)
+Motion Classify Ad: +++++ (440 lines added, 32 lines removed)
+Niclav Sys: +++++ (339 lines added, 30 lines removed)
+Object Detection Fomo: +++++ (343 lines added, 34 lines removed)
+On","Book Changelog (part 18)"
+53,"device Learning: +++++ (659 lines added, 13 lines removed)
+Ops: +++++ (827 lines added, 9 lines removed)
+Optimizations: +++++ (895 lines added, 41 lines removed)
+Privacy Security: +++++ (1072 lines added, 17 lines removed)
+Responsible Ai: +++++ (449 lines added, 5 lines removed)
+Sustainable Ai: +++++ (627 lines added, 10 lines removed)
+Training: +++++ (932 lines added, 6 lines removed)
+Minor Updates
+Efficient Ai: +++++ (179 lines added, 5 lines removed)
+Generative Ai: +++++ (72 lines added, 1 li","Book Changelog (part 19)"
+54,"nes removed)
+Kws Feature Eng: +++++ (153 lines added, 8 lines removed)
+Robust Ai: ++++++ (50 lines added, 0 lines removed)
+Workflow: +++++ (97 lines added, 2 lines removed)","Book Changelog (part 20)"
+55,"Acknowledgements
+This book, inspired by the TinyML edX course and CS294r at Harvard University, is the result of years of hard work and collaboration with many students, researchers and practitioners. We are deeply indebted to the folks whose groundbreaking work laid its foundation.
+
+As our understanding of machine learning systems deepened, we realized that fundamental principles apply across scales, from tiny embedded systems to large-scale deployments.","Acknowledgements (part 1)"
+56,"This realization shaped the book’s expansion into an exploration of machine learning systems with the aim of providing a foundation applicable across the spectrum of implementations.
+
+Funding Agencies and Companies
+Academic Support
+We are grateful for the academic support that has made it possible to hire teaching assistants to help improve instructional material and quality:
+
+
+
+
+
+
+
+Non-Profit and Institutional Support
+We gratefully acknowledge the support of the following non-profit organizati","Acknowledgements (part 2)"
+57,"ons and institutions that have contributed to educational outreach efforts, provided scholarship funds to students in developing countries, and organized workshops to teach using the material:
+
+
+
+
+
+Corporate Support
+The following companies contributed hardware kits used for the labs in this book and/or supported the development of hands-on educational materials:
+
+
+
+
+
+
+
+Contributors
+We express our sincere gratitude to the open-source community of learners, educators, and contributors.","Acknowledgements (part 3)"
+58,"Each contribution, whether a chapter section or a single-word correction, has significantly enhanced the quality of this resource. We also acknowledge those who have shared insights, identified issues, and provided valuable feedback behind the scenes.
+
+A comprehensive list of all GitHub contributors, automatically updated with each new contribution, is available below. For those interested in contributing further, please consult our GitHub page for more information.","Acknowledgements (part 4)"
+59,"Vijay Janapa Reddi
+Vijay Janapa Reddi
+jasonjabbour
+jasonjabbour
+Ikechukwu Uchendu
+Ikechukwu Uchendu
+Zeljko Hrcek
+Zeljko Hrcek
+Kai Kleinbard
+Kai Kleinbard
+Naeem Khoshnevis
+Naeem Khoshnevis
+Marcelo Rovai
+Marcelo Rovai
+Sara Khosravi
+Sara Khosravi
+Douwe den Blanken
+Douwe den Blanken
+shanzehbatool
+shanzehbatool
+Elias
+Elias
+Jared Ping
+Jared Ping
+Jeffrey Ma
+Jeffrey Ma
+Itai Shapira
+Itai Shapira
+Maximilian Lam
+Maximilian Lam
+Jayson Lin
+Jayson Lin
+Sophia Cho
+Sophia Cho
+Andrea
+Andrea
+Alex Rodriguez
+Alex","Acknowledgements (part 5)"
+6,"” – African Proverb
+
+As a living and breathing resource, this book is a continual work in progress, reflecting the ever-evolving nature of machine learning systems. Advancements in the ML landscape drive our commitment to keeping this resource updated with the latest insights, techniques, and best practices. We warmly invite you to join us on this journey by contributing your expertise, feedback, and ideas.
+
+Global Outreach
+Thank you to all our readers and visitors.","preface (part 6)"
+60,"Rodriguez
+Korneel Van den Berghe
+Korneel Van den Berghe
+Zishen Wan
+Zishen Wan
+Colby Banbury
+Colby Banbury
+Mark Mazumder
+Mark Mazumder
+Divya Amirtharaj
+Divya Amirtharaj
+Abdulrahman Mahmoud
+Abdulrahman Mahmoud
+Srivatsan Krishnan
+Srivatsan Krishnan
+marin-llobet
+marin-llobet
+Emeka Ezike
+Emeka Ezike
+Aghyad Deeb
+Aghyad Deeb
+Haoran Qiu
+Haoran Qiu
+Aditi Raju
+Aditi Raju
+ELSuitorHarvard
+ELSuitorHarvard
+Emil Njor
+Emil Njor
+Michael Schnebly
+Michael Schnebly
+Jared Ni
+Jared Ni
+oishib
+oishib
+Yu-Shun Hsiao
+Yu-S","Acknowledgements (part 6)"
+61,"hun Hsiao
+Jae-Won Chung
+Jae-Won Chung
+Henry Bae
+Henry Bae
+Jennifer Zhou
+Jennifer Zhou
+Arya Tschand
+Arya Tschand
+Eura Nofshin
+Eura Nofshin
+Pong Trairatvorakul
+Pong Trairatvorakul
+Matthew Stewart
+Matthew Stewart
+Marco Zennaro
+Marco Zennaro
+Andrew Bass
+Andrew Bass
+Shvetank Prakash
+Shvetank Prakash
+Fin Amin
+Fin Amin
+Allen-Kuang
+Allen-Kuang
+Gauri Jain
+Gauri Jain
+gnodipac886
+gnodipac886
+The Random DIY
+The Random DIY
+Bruno Scaglione
+Bruno Scaglione
+Fatima Shah
+Fatima Shah
+Sercan Aygün
+Sercan Aygün
+Alex","Acknowledgements (part 7)"
+62,"Oesterling
+Alex Oesterling
+Baldassarre Cesarano
+Baldassarre Cesarano
+Abenezer
+Abenezer
+TheHiddenLayer
+TheHiddenLayer
+abigailswallow
+abigailswallow
+yanjingl
+yanjingl
+happyappledog
+happyappledog
+Yang Zhou
+Yang Zhou
+Aritra Ghosh
+Aritra Ghosh
+Andy Cheng
+Andy Cheng
+Bilge Acun
+Bilge Acun
+Jessica Quaye
+Jessica Quaye
+Jason Yik
+Jason Yik
+Emmanuel Rassou
+Emmanuel Rassou
+Shreya Johri
+Shreya Johri
+Sonia Murthy
+Sonia Murthy
+Vijay Edupuganti
+Vijay Edupuganti
+Costin-Andrei Oncescu
+Costin-Andrei Oncescu
+Annie","Acknowledgements (part 8)"
+63,"Laurie Cook
+Annie Laurie Cook
+Jothi Ramaswamy
+Jothi Ramaswamy
+Batur Arslan
+Batur Arslan
+Curren Iyer
+Curren Iyer
+Fatima Shah
+Fatima Shah
+Edward Jin
+Edward Jin
+a-saraf
+a-saraf
+songhan
+songhan
+Zishen
+Zishen","Acknowledgements (part 9)"
+64,"SocratiQ AI
+AI Learning Companion
+Welcome to SocratiQ (pronounced ``Socratic’’), an AI learning assistant seamlessly integrated throughout this resource. Inspired by the Socratic method of teaching—emphasizing thoughtful questions and answers to stimulate critical thinking—SocratiQ is part of our experiment with what we call as Generative Learning. By combining interactive quizzes, personalized assistance, and real-time feedback, SocratiQ is meant to reinforce your understanding and help you cre","SocratiQ AI (part 1)"
+65,"ate new connections. SocratiQ is still a work in progress, and we welcome your feedback.
+
+Learn more: Read our research paper on SocratiQ’s design and pedagogy here.
+
+Listen to this AI-generated podcast about SocratiQ.
+
+You can enable SocratiQ by clicking the button below:
+
+SocratiQ: OFF
+
+Direct URL Access
+You can directly control SocratiQ by adding ?socratiq= parameters to your URL:
+
+To activate: mlsysbook.ai/?socratiq=true
+To deactivate: mlsysbook.ai/?","SocratiQ AI (part 2)"
+66,"socratiq=false
+This gives you with quick access to toggle SocratiQ’s functionality directly from your browser’s address bar if you are on a page and do not want to return here to toggle functionality.
+
+SocratiQ’s goal is to adapt to your needs while generating targeted questions and engaging in meaningful dialogue about the material. Unlike traditional textbook study, SocratiQ offers an interactive, personalized learning experience that can help you better understand and retain complex concepts.","SocratiQ AI (part 3)"
+67,"It is only available as an online feature.
+
+Quick Start Guide
+Enable SocratiQ using the button below or URL parameters
+Use keyboard shortcut (Cmd/Ctrl + /) to open SocratiQ anytime
+Set your academic level in Settings
+Start learning! Look for quiz buttons at the end of sections
+Please note that this is an experimental feature. We are experimenting with the idea of creating a dynamic and personalized learning experience by harnessing the power of generative AI.","SocratiQ AI (part 4)"
+68,"We hope that this approach will transform how you interact with and absorb the complex concepts.
+
+Warning
+About AI Responses: While SocratiQ uses advanced AI to generate quizzes and provide assistance, like all AI systems, it may occasionally provide imperfect or incomplete answers. However, we’ve designed and tested it to ensure it’s effective for supporting your learning journey. If you’re unsure about any response, refer to the textbook content or consult your instructor.","SocratiQ AI (part 5)"
+69,"Once you’ve enabled SocratiQ it will always be available when you visit this site.
+
+You can access SocratiQ at any time using a keyboard shortcut shown in Figure 1, which brings up the interface shown in Figure 2.
+
+
+Figure 1: Keyboard shortcut for SocratiQ.
+
+Figure 2: The main SocratiQ interface, showing the key components of your AI learning assistant.
+Button Overview
+The top nav bar provides quick access to the following features:
+
+Adjust your settings at any time.","SocratiQ AI (part 6)"
+7,"Your engagement with the material keeps us motivated.
+
+
+Why We Wrote This Book
+While there are plenty of resources that focus on the algorithmic side of machine learning, resources on the systems side of things are few and far between. This gap inspired us to create this book—a resource dedicated to the principles and practices of building efficient and scalable ML systems.
+
+Our vision for this book and its broader mission is deeply rooted in the transformative potential of AI and the need to m","preface (part 7)"
+70,"Track your progress by viewing the dashboard.
+Start new or save your conversations with SocratiQ.
+
+Figure 3: View of the top nav menu.
+Personalize Your Learning
+Before diving into your studies, take a moment to configure SocratiQ for your academic level. This initial setup ensures that all interactions, from quiz questions to explanations, are tailored to your background knowledge. Figure 4 shows where you can adjust these preferences.","SocratiQ AI (part 7)"
+71,"You can augment any AI SocratiQ response using the dropdown menu at the top of each message.
+
+
+Figure 4: The settings panel where you can customize SocratiQ to match your academic level.
+Learning with SocratiQ
+Quizzes
+As you progress through each section of the textbook, you have the option to ask SocratiQ to automatically generate quizzes tailored to reinforce key concepts. These quizzes are conveniently inserted at the end of every major subsection (e.g., 1.1, 1.2, 1.","SocratiQ AI (part 8)"
+72,"3, and so on), as illustrated in Figure 6.
+
+
+Figure 5: Redo an AI message by choosing a new experience level.
+
+Figure 6: Quizzes are generated at the end of every section.
+Each quiz typically consists of 3-5 multiple-choice questions and takes only 1-2 minutes to complete. These questions are designed to assess your understanding of the material covered in the preceding section, as shown in Figure 7 (a).","SocratiQ AI (part 9)"
+73,"Upon submitting your answers, SocratiQ provides immediate feedback along with detailed explanations for each question, as demonstrated in Figure 7 (b).
+
+
+(a) Example of AI-generated quiz questions.
+ 
+
+
+(b) Example of AI-generated feedback and explanations for quizzes.
+Figure 7: SocratiQ uses a Large Language Model (LLM) to automatically generate and grade quizzes.
+Example Learning Flow
+Read a section
+Select challenging text → Ask SocratiQ for explanation
+Take the section quiz
+Review related co","SocratiQ AI (part 10)"
+74,"ntent suggestions
+Track progress in dashboard
+Getting Help with Concepts
+When you encounter challenging concepts, SocratiQ offers two powerful ways to get help. First, you can select any text from the textbook and ask for a detailed explanation, as demonstrated in Figure 8.
+
+
+Figure 8: Selecting specific text to ask for clarification.
+Once you’ve selected the text, you can ask questions about it, and SocratiQ will provide detailed explanations based on that context, as illustrated in Figure 9.","SocratiQ AI (part 11)"
+75,"Figure 9: Example of how SocratiQ provides explanations based on selected text.
+Figure 11 shows the response for the ask in Figure 9.
+
+Additionally, you can also reference Sections, as shown in Figure 10, Sub-sections and keywords directly as you converse with SocratiQ. Use the @ symbol to reference a section, sub-section or keyword. You can also click the + Context button right above the input.
+
+
+Figure 10: Referencing different sections from the textbook.","SocratiQ AI (part 12)"
+76,"Figure 11: An interactive chat session with SocratiQ, demonstrating how to get clarification on concepts.
+To enhance your learning experience, SocratiQ doesn’t just answer your questions—it also suggests related content from the textbook that might be helpful for deeper understanding, as shown in Figure 12.
+
+
+Figure 12: SocratiQ suggests related content based on your questions to help deepen your understanding.","SocratiQ AI (part 13)"
+77,"Tracking Your Progress
+Performance Dashboard
+SocratiQ maintains a comprehensive record of your learning journey. The progress dashboard (Figure 13) displays your quiz performance statistics, learning streaks, and achievement badges. This dashboard updates real-time.
+
+
+Figure 13: The progress dashboard showing your learning statistics and achievements.
+As you continue to engage with the material and complete quizzes, you’ll earn various badges that recognize your progress, as shown in Figure 14.","SocratiQ AI (part 14)"
+78,"🏅 Achievement Badges
+As you progress through the quizzes, you’ll earn special badges to mark your achievements! Here’s what you can earn:
+
+Badge	Name	How to Earn
+🎯	First Steps	Complete your first quiz
+🔢	On a Streak	Maintain a streak of perfect scores
+🏆	Quiz Medalist	Complete 10 quizzes
+🏆🏆	Quiz Champion	Complete 20 quizzes
+🏆🏆🏆	Quiz Legend	Complete 30 quizzes
+🏆🏆🏆🏆 x n	Quiz AGI Super Human	Complete 40 or more quizzes
+Tip
+Keep taking quizzes to collect all badges and improve your lear","SocratiQ AI (part 15)"
+79,"ning journey! Your current badges will appear in the quiz statistics dashboard.
+
+
+Figure 14: Examples of achievement badges you can earn through consistent engagement.
+If you’d like a record of your progress you can generate a PDF report. It will show your progress, average performance and all the questions you’ve attempted. The PDF is a generated with a unique hash and can be uniquely validated.
+
+
+Figure 15: You can click the Download Report button to view your report.","SocratiQ AI (part 16)"
+8,"ake AI education globally accessible to all. To learn more about the inspiration behind this project and the values driving its creation, we encourage you to read the Author’s Note.
+
+Want to Help Out?
+This is a collaborative project, and your input matters! If you’d like to contribute, check out our contribution guidelines. Feedback, corrections, and new ideas are welcome—simply file a GitHub issue.
+
+What’s Next?","preface (part 8)"
+80,"You can verify that your PDF has been created by SocratiQ by clicking the verify button and uploading your generated PDF.
+Data Storage
+Important
+Important Note: All progress data is stored locally in your browser. Clearing your browser history or cache will erase your entire learning history, including quiz scores, streaks, and achievement badges.
+
+You can also delete all of your saved conversations by clicking the New Chat button in the nav bar.","SocratiQ AI (part 17)"
+81,"Figure 16: Load or delete previous chats or start a new chat.
+Technical Requirements
+To use SocratiQ effectively, you’ll need:
+
+Chrome or Safari browser
+JavaScript enabled
+Stable internet connection
+Common Issues and Troubleshooting
+If SocratiQ isn’t responding: Refresh the page
+If quizzes don’t load: Check your internet connection
+If progress isn’t saving: Ensure cookies are enabled
+For persistent issues, please contact us at vj[@]eecs.harvard.edu.","SocratiQ AI (part 18)"
+82,"Providing Feedback
+Your feedback helps us improve SocratiQ.
+
+You can report technical issues, suggest improvements to quiz questions, or share thoughts about AI responses using the feedback buttons located throughout the interface. You can submit a GitHub issue.","SocratiQ AI (part 19)"
+9,"If you’re ready to dive deeper into the book’s structure, learning objectives, and practical use, visit the About the Book section for more details.","preface (part 9)"
