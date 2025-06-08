@@ -480,7 +480,7 @@
                             deleteButton.textContent = 'Delete this';
                           //  deleteButton.addEventListener('click', () => deleteChunk(chunk.id)); // Attach event listener here
                             deleteButton.addEventListener('click', async () => await deleteChunk(chunk.id));
-
+                            console.log('added delete button')
                             
                             const itemHeader = document.createElement('div');
                             itemHeader.classList.add('item-header');
