@@ -1176,7 +1176,8 @@
                 }
 
                 const chunksToSave = [];
-                const MIN_MEANINGFUL_CONTENT_LENGTH = 10; // Only import content longer than this
+                // Changed minimum content length from 10 to 1 to allow shorter but meaningful entries
+                const MIN_MEANINGFUL_CONTENT_LENGTH = 1; 
 
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
@@ -1190,14 +1191,15 @@
                         let source = parts[sourceIndex]?.trim() || 'CSV Import';
 
                         // Remove common control characters that might interfere or be unwanted
-                        content = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+                        // This pattern only removes ASCII control characters (0x00-0x1F and 0x7F)
+                        content = content.replace(/[\x00-\x1F\x7F]/g, '').trim();
 
                         // Filter out empty or extremely short/meaningless content after cleaning
                         if (content.length >= MIN_MEANINGFUL_CONTENT_LENGTH) {
                             chunksToSave.push({ content, source });
                         } else {
                             failedImports++;
-                            console.warn(`Skipping CSV row with content too short or malformed (length ${content.length}): "${line}"`);
+                            console.warn(`Skipping CSV row (content too short or contains only control characters after cleaning, length ${content.length}): "${line}"`);
                         }
                     } else {
                         failedImports++;
