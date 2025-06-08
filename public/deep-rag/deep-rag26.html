@@ -478,9 +478,10 @@
                             const deleteButton = document.createElement('button');
                             deleteButton.classList.add('delete-button');
                             deleteButton.textContent = 'Delete this';
-                           // deleteButton.addEventListener('click', () => deleteChunk(chunk.id)); // Attach event listener here
-                            deleteButton.addEventListener('click', () => alert('cool')); // Attach event listener here
+                          //  deleteButton.addEventListener('click', () => deleteChunk(chunk.id)); // Attach event listener here
+                            deleteButton.addEventListener('click', async () => await deleteChunk(chunk.id));
 
+                            
                             const itemHeader = document.createElement('div');
                             itemHeader.classList.add('item-header');
                             itemHeader.innerHTML = `<span>Chunk #${chunkNumber}</span>`;
