@@ -1120,25 +1120,33 @@
             const result = [];
             const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^,]*))(?:,|$)/g;
             let match;
-            let lastIndex = 0;
+            let lastIndex = 0; // Tracks the last index where the regex successfully matched
 
             while ((match = regex.exec(line)) !== null) {
+                // Safeguard against infinite loops: if no progress is made (zero-width match and lastIndex doesn't change)
+                if (regex.lastIndex === lastIndex && match[0].length === 0) {
+                    console.warn("CSV parsing infinite loop detected in line:", line.substring(lastIndex));
+                    // Attempt to push any remaining unparsed content as a single field
+                    if (lastIndex < line.length) {
+                        result.push(line.substring(lastIndex));
+                    }
+                    break; // Exit the loop
+                }
+                lastIndex = regex.lastIndex; // Update for the next iteration's progress check
+
                 let value;
                 if (match[1] !== undefined) {
-                    // Quoted value (group 1) - replace double double quotes with single double quotes
-                    value = match[1].replace(/\"\"/g, '\"');
-                } else {
-                    // Unquoted value (group 2)
+                    // This means a quoted field was matched (group 1)
+                    value = match[1].replace(/\"\"/g, '\"'); // Unescape double quotes
+                } else if (match[2] !== undefined) {
+                    // This means an unquoted field was matched (group 2)
                     value = match[2];
+                } else {
+                    // This case should ideally not be hit with a robust regex, but for safety:
+                    value = ''; // Treat as an empty field
                 }
                 result.push(value);
-                lastIndex = regex.lastIndex;
             }
-            // Handle trailing comma if any
-            if (lastIndex === line.length && line.endsWith(',')) {
-                result.push('');
-            }
-
             return result;
         }
 
