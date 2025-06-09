@@ -1325,6 +1325,21 @@
             reader.readAsText(file);
         }
 
+        /**
+         * Helper function to clean strings for CSV output.
+         * Removes ASCII control characters and specific Unicode line/paragraph separators.
+         * @param {string} str The string to clean.
+         * @returns {string} The cleaned string.
+         */
+        function cleanStringForCsv(str) {
+            // Remove ASCII control characters (0x00-0x1F, 0x7F)
+            // Remove Unicode line and paragraph separators (U+2028, U+2029)
+            // This leaves standard newlines (\n, \r) and tabs (\t) intact,
+            // which are generally handled correctly within quoted CSV fields.
+            return str.replace(/[\u0000-\u001F\u007F\u2028\u2029]/g, '');
+        }
+
+
         async function downloadCsvData() {
             try {
                 if (!db) {
@@ -1349,9 +1364,14 @@
 
                     chunks.forEach(chunk => {
                         const number = chunk.id.split('_')[1];
+                        
+                        // Clean content and source before escaping for CSV
+                        const cleanedContent = cleanStringForCsv(chunk.content);
+                        const cleanedSource = cleanStringForCsv(chunk.source);
+
                         // Escape quotes by doubling them, then wrap in quotes
-                        const escapedContent = `"${chunk.content.replace(/"/g, '""')}"`;
-                        const escapedSource = `"${chunk.source.replace(/"/g, '""')}"`;
+                        const escapedContent = `"${cleanedContent.replace(/"/g, '""')}"`;
+                        const escapedSource = `"${cleanedSource.replace(/"/g, '""')}"`;
                         csvContent += `${number},${escapedContent},${escapedSource}\n`;
                     });
 
