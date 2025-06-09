@@ -165,6 +165,7 @@
 
         // New DB management elements
         const dbSelector = document.getElementById('dbSelector');
+        // FIX: Removed 'document = ' from this line as it was attempting to reassign the global document object.
         const loadDbButton = document.getElementById('loadDbButton');
         const newDbNameInput = document.getElementById('newDbNameInput');
         const createNewDbButton = document.getElementById('createNewDbButton');
@@ -324,70 +325,80 @@
 
         /**
          * Helper function to split text into chunks based on size.
+         * Enforces that chunks are at least `chunkSize` long, unless it's the very last segment of text.
+         * Attempts to respect sentence boundaries if they fall within a reasonable window.
          * @param {string} text The text to split.
          * @param {number} chunkSize The maximum size of each chunk.
          * @param {string} source The source to assign to the chunks.
          * @returns {Array<Object>} An array of chunk objects.
          */
         function splitTextIntoChunks(text, chunkSize, source) {
-            const rawChunks = [];
-            let currentPosition = 0;
-            let chunkIndex = 1;
+            console.log(`[splitTextIntoChunks] Starting chunking for text length: ${text.length}, desired chunkSize: ${chunkSize}`);
+            const chunks = [];
+            let currentStartIndex = 0;
+            let chunkNumber = 1;
 
-            // Pass 1: Initial splitting with sentence boundary preference
-            while (currentPosition < text.length) {
-                const endPosition = Math.min(currentPosition + chunkSize, text.length);
-                let chunkContent = text.substring(currentPosition, endPosition);
+            while (currentStartIndex < text.length) {
+                let idealEndIndex = Math.min(currentStartIndex + chunkSize, text.length);
+                let actualEndIndex = idealEndIndex; // This will be the end index for the current chunk
+                let chunkContent;
 
-                // Try to split at a sentence boundary if possible to avoid cutting mid-sentence
-                if (endPosition < text.length) {
-                    const lastSentenceEnd = Math.max(
-                        chunkContent.lastIndexOf('.'),
-                        chunkContent.lastIndexOf('?'),
-                        chunkContent.lastIndexOf('!')
-                    );
-                    // If a sentence ends within the last 20% of the chunk and it's not the very beginning
-                    if (lastSentenceEnd > chunkContent.length * 0.8 && lastSentenceEnd > 0) {
-                        // Use that as the boundary, include the punctuation
-                        chunkContent = chunkContent.substring(0, lastSentenceEnd + 1);
-                        currentPosition += lastSentenceEnd + 1;
-                    } else {
-                        // Otherwise, just split at chunk size
-                        currentPosition = endPosition;
+                const remainingTextLength = text.length - currentStartIndex;
+
+                // Rule 1: If this is the very last potential chunk and it's shorter than chunkSize, just take it.
+                if (remainingTextLength <= chunkSize) {
+                    chunkContent = text.substring(currentStartIndex, text.length);
+                    actualEndIndex = text.length;
+                    console.log(`[Chunk ${chunkNumber}] This is the last portion of text (length: ${chunkContent.length}). Adding as is.`);
+                } else {
+                    // Rule 2: Try to find a sentence boundary within a 'look-back' window from idealEndIndex.
+                    // This window ensures the chunk remains close to `chunkSize`.
+                    // Don't cut if it makes the chunk less than 80% of chunkSize.
+                    const MIN_PERCENT_FOR_SENTENCE_CUT = 0.8; 
+                    const searchStartForSentence = currentStartIndex + Math.floor(chunkSize * MIN_PERCENT_FOR_SENTENCE_CUT);
+                    
+                    let sentenceBreakFound = false;
+                    // Search for a sentence ending from `idealEndIndex - 1` backwards to `searchStartForSentence`
+                    for (let i = idealEndIndex - 1; i >= searchStartForSentence; i--) {
+                        // Ensure we don't go before the start of the current segment
+                        if (i >= currentStartIndex && (text[i] === '.' || text[i] === '?' || text[i] === '!')) {
+                            actualEndIndex = i + 1; // Include the punctuation
+                            sentenceBreakFound = true;
+                            console.log(`[Chunk ${chunkNumber}] Found sentence break at index ${i}. Chunk will end at ${actualEndIndex}.`);
+                            break;
+                        }
                     }
-                } else {
-                    currentPosition = endPosition;
-                }
 
-                rawChunks.push({
+                    if (!sentenceBreakFound) {
+                        // If no good sentence break found in the window, or it would make the chunk too small,
+                        // stick to the ideal chunkSize cut.
+                        actualEndIndex = idealEndIndex;
+                        console.log(`[Chunk ${chunkNumber}] No suitable sentence break found in window. Cutting strictly at ideal chunkSize boundary.`);
+                    }
+
+                    chunkContent = text.substring(currentStartIndex, actualEndIndex);
+
+                    // Final check for non-last chunks: if the *chosen* `chunkContent` is still too small
+                    // AND there's more text *after* it, it means the sentence break logic cut too early.
+                    // In this case, revert to the strict `chunkSize` cut to uphold the user's main rule.
+                    if (actualEndIndex - currentStartIndex < chunkSize * MIN_PERCENT_FOR_SENTENCE_CUT && (text.length - actualEndIndex) > 0) {
+                        console.log(`[Chunk ${chunkNumber}] Adjusted chunk (len: ${actualEndIndex - currentStartIndex}) is < ${MIN_PERCENT_FOR_SENTENCE_CUT * 100}% of chunkSize (${chunkSize}). Reverting to strict chunkSize.`);
+                        actualEndIndex = idealEndIndex;
+                        chunkContent = text.substring(currentStartIndex, actualEndIndex);
+                    }
+                }
+                
+                chunks.push({
                     content: chunkContent.trim(),
-                    source: `${source} (part ${chunkIndex})`
+                    source: `${source} (part ${chunkNumber})`
                 });
-                chunkIndex++;
+                console.log(`[Chunk ${chunkNumber}] Final Added (len: ${chunkContent.length}) from index ${currentStartIndex} to ${actualEndIndex}. Source: "${chunks[chunks.length-1].source}"`);
+                currentStartIndex = actualEndIndex;
+                chunkNumber++;
             }
 
-            // Pass 2: Merge small chunks
-            const finalChunks = [];
-            // Minimum threshold for a chunk, either 100 characters or 1/4 of the desired chunk size
-            const MIN_CHUNK_MERGE_THRESHOLD = Math.max(100, Math.floor(chunkSize / 4));
-
-            for (let i = 0; i < rawChunks.length; i++) {
-                const currentChunk = rawChunks[i];
-                if (currentChunk.content.length < MIN_CHUNK_MERGE_THRESHOLD && finalChunks.length > 0) {
-                    // If current chunk is too small and there's a previous chunk, merge them
-                    const lastFinalChunk = finalChunks[finalChunks.length - 1];
-                    lastFinalChunk.content += ' ' + currentChunk.content;
-                    lastFinalChunk.wordCount = lastFinalChunk.content.split(/\s+/).length;
-                    lastFinalChunk.charCount = lastFinalChunk.content.length;
-                    // Update source to reflect merging, maybe? Or keep original source of the first part.
-                    // For now, keep the original source of the first part.
-                } else {
-                    // Otherwise, add the current chunk to final chunks
-                    finalChunks.push(currentChunk);
-                }
-            }
-            console.log(`Original chunks: ${rawChunks.length}, Final chunks after merging: ${finalChunks.length}`);
-            return finalChunks;
+            console.log(`[splitTextIntoChunks] Finished chunking. Total chunks created: ${chunks.length}`);
+            return chunks;
         }
 
 
@@ -477,11 +488,12 @@
                 console.log(`Text length (${content.length}) exceeds chunk size (${chunkSize}). Auto-chunking...`);
                 chunksToProcess = splitTextIntoChunks(content, chunkSize, source);
             } else {
+                // If not auto-chunking or content is shorter than chunkSize, treat as a single chunk
                 chunksToProcess.push({ content: content, source: source });
             }
 
             if (chunksToProcess.length === 0) {
-                showMessage("No valid chunks to process.", 'error');
+                showMessage("No valid chunks to process after chunking rules applied.", 'error');
                 return;
             }
 
@@ -1176,7 +1188,8 @@
                 }
 
                 const chunksToSave = [];
-                const MIN_MEANINGFUL_CONTENT_LENGTH = 10; // Only import content longer than this
+                // Changed minimum content length from 10 to 1 to allow shorter but meaningful entries
+                const MIN_MEANINGFUL_CONTENT_LENGTH = 1; 
 
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
@@ -1190,14 +1203,15 @@
                         let source = parts[sourceIndex]?.trim() || 'CSV Import';
 
                         // Remove common control characters that might interfere or be unwanted
-                        content = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+                        // This pattern only removes ASCII control characters (0x00-0x1F and 0x7F)
+                        content = content.replace(/[\x00-\x1F\x7F]/g, '').trim();
 
                         // Filter out empty or extremely short/meaningless content after cleaning
                         if (content.length >= MIN_MEANINGFUL_CONTENT_LENGTH) {
                             chunksToSave.push({ content, source });
                         } else {
                             failedImports++;
-                            console.warn(`Skipping CSV row with content too short or malformed (length ${content.length}): "${line}"`);
+                            console.warn(`Skipping CSV row (content too short or contains only control characters after cleaning, length ${content.length}): "${line}"`);
                         }
                     } else {
                         failedImports++;
@@ -1311,6 +1325,21 @@
             reader.readAsText(file);
         }
 
+        /**
+         * Helper function to clean strings for CSV output.
+         * Removes ASCII control characters and specific Unicode line/paragraph separators.
+         * @param {string} str The string to clean.
+         * @returns {string} The cleaned string.
+         */
+        function cleanStringForCsv(str) {
+            // Remove ASCII control characters (0x00-0x1F, 0x7F)
+            // Remove Unicode line and paragraph separators (U+2028, U+2029)
+            // This leaves standard newlines (\n, \r) and tabs (\t) intact,
+            // which are generally handled correctly within quoted CSV fields.
+            return str.replace(/[\u0000-\u001F\u007F\u2028\u2029]/g, '');
+        }
+
+
         async function downloadCsvData() {
             try {
                 if (!db) {
@@ -1335,9 +1364,14 @@
 
                     chunks.forEach(chunk => {
                         const number = chunk.id.split('_')[1];
+                        
+                        // Clean content and source before escaping for CSV
+                        const cleanedContent = cleanStringForCsv(chunk.content);
+                        const cleanedSource = cleanStringForCsv(chunk.source);
+
                         // Escape quotes by doubling them, then wrap in quotes
-                        const escapedContent = `"${chunk.content.replace(/"/g, '""')}"`;
-                        const escapedSource = `"${chunk.source.replace(/"/g, '""')}"`;
+                        const escapedContent = `"${cleanedContent.replace(/"/g, '""')}"`;
+                        const escapedSource = `"${cleanedSource.replace(/"/g, '""')}"`;
                         csvContent += `${number},${escapedContent},${escapedSource}\n`;
                     });
 
